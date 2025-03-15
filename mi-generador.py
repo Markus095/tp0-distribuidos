@@ -2,7 +2,7 @@ import sys
 
 def main(argc=len(sys.argv), argv=sys.argv):
     filename = argv[1]
-    number_of_clients = [int(argv[2])]
+    number_of_clients = int(argv[2])
     if number_of_clients < 1:
         print("Number of clients must be greater than 0.")
         return
@@ -10,7 +10,7 @@ def main(argc=len(sys.argv), argv=sys.argv):
         with open(filename, 'w') as file:
             
             add_server_to_yaml(filename)
-            for i in range(1, number_of_clients[0] + 1):
+            for i in range(1, number_of_clients + 1):
                 add_client_to_yaml(filename, i)
             add_network_to_yaml(filename)    
         print(f"YAML file '{filename}' created successfully.")
