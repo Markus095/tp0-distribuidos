@@ -31,7 +31,6 @@ def add_server_to_yaml(filename):
             file.write("      - ./server/config.ini:/config.ini\n")
             file.write("    environment:\n")
             file.write("      - PYTHONUNBUFFERED=1\n")
-            file.write("      - LOGGING_LEVEL=DEBUG\n")
             file.write("    networks:\n")
             file.write("      - testing_net\n\n")
     except Exception as e:
@@ -50,7 +49,6 @@ def add_client_to_yaml(filename, client_number):
             file.write("      - ./client/config.yaml:/config.yaml\n")
             file.write("    environment:\n")
             file.write(f"      - CLI_ID={client_number}\n")
-            file.write("      - CLI_LOG_LEVEL=DEBUG\n")
             file.write("    networks:\n")
             file.write("      - testing_net\n")
             file.write("    depends_on:\n")
