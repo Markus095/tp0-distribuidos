@@ -5,7 +5,7 @@ services:
     image: server:latest
     entrypoint: python3 /main.py
     volumes:
-      - ~/Documents/disribuidos/tp0-distribuidos/server/config.ini
+      - /home/markus/Documents/disribuidos/tp0-distribuidos/server/config.ini
     environment:
       - PYTHONUNBUFFERED=1
       - LOGGING_LEVEL=DEBUG
@@ -16,6 +16,8 @@ services:
     container_name: client1
     image: client:latest
     entrypoint: /client
+    volumes:
+      - /home/markus/Documents/disribuidos/tp0-distribuidos/client/config.yaml
     environment:
       - CLI_ID=1
       - CLI_LOG_LEVEL=DEBUG
@@ -29,7 +31,7 @@ services:
     image: client:latest
     entrypoint: /client
     volumes:
-      - ~/Documents/disribuidos/tp0-distribuidos/server/config.ini
+      - /home/markus/Documents/disribuidos/tp0-distribuidos/client/config.yaml
     environment:
       - CLI_ID=2
       - CLI_LOG_LEVEL=DEBUG
@@ -42,6 +44,8 @@ services:
     container_name: client3
     image: client:latest
     entrypoint: /client
+    volumes:
+      - /home/markus/Documents/disribuidos/tp0-distribuidos/client/config.yaml
     environment:
       - CLI_ID=3
       - CLI_LOG_LEVEL=DEBUG
@@ -54,6 +58,8 @@ services:
     container_name: client4
     image: client:latest
     entrypoint: /client
+    volumes:
+      - /home/markus/Documents/disribuidos/tp0-distribuidos/client/config.yaml
     environment:
       - CLI_ID=4
       - CLI_LOG_LEVEL=DEBUG
@@ -66,6 +72,8 @@ services:
     container_name: client5
     image: client:latest
     entrypoint: /client
+    volumes:
+      - /home/markus/Documents/disribuidos/tp0-distribuidos/client/config.yaml
     environment:
       - CLI_ID=5
       - CLI_LOG_LEVEL=DEBUG
