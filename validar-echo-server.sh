@@ -6,7 +6,7 @@ fi
 
 sleep 2
 
-CONTAINER_ID=$(docker run -d --network tp0_testing_net alpine:latest sh -c "apk add --no-cache netcat-openbsd && sleep 60")
+CONTAINER_ID=$(docker run -d --network tp0_testing_net alpine:latest sh -c "apk add --no-cache netcat-openbsd && sleep 5")
 
 if [ -z "$CONTAINER_ID" ]; then
     echo "action: test_echo_server | result: fail"
@@ -15,9 +15,11 @@ fi
 
 sleep 2
 
+
 TEST_MSG="Hello Server"
 
 RESPONSE=$(docker exec $CONTAINER_ID sh -c "echo '$TEST_MSG' | nc server 12345")
+
 
 docker rm -f $CONTAINER_ID > /dev/null
 
