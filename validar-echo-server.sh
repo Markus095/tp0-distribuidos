@@ -1,28 +1,27 @@
 #!/bin/bash
-if ! docker compose -f docker-compose-dev.yaml up -d; then
-    echo "action: test_echo_server | result: fail"
-    exit 1
-fi
 
-sleep 2
-
-CONTAINER_ID=$(docker run -d --network tp0_testing_net alpine:latest sh -c "apk add --no-cache netcat-openbsd && sleep 5")
+# Create a temporary container with netcat installed
+CONTAINER_ID=$(docker run -d --network tp0_testing_net alpine:latest sh -c "apk add --no-cache netcat-openbsd && sleep 10")
 
 if [ -z "$CONTAINER_ID" ]; then
     echo "action: test_echo_server | result: fail"
     exit 1
 fi
 
+# Wait for netcat installation
 sleep 2
 
-
+# Test message to send
 TEST_MSG="Hello Server"
 
-RESPONSE=$(docker exec $CONTAINER_ID sh -c "echo '$TEST_MSG' | nc server 12345")
+# Send test message and capture response
+RESPONSE=$(docker exec $CONTAINER_ID sh -c "echo '$TEST_MSG' | nc -w 5 server 12345")
 
+# Clean up
 docker rm -f $CONTAINER_ID > /dev/null
 
-if [ "$RESPONSE" = "$TEST_MSG" ]; then
+# Compare response (trimming any whitespace/newlines)
+if [ "$(echo -n "$RESPONSE" | tr -d '\n\r')" = "$(echo -n "$TEST_MSG" | tr -d '\n\r')" ]; then
     echo "action: test_echo_server | result: success"
     exit 0
 else
