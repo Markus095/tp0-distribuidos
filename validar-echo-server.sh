@@ -20,7 +20,6 @@ TEST_MSG="Hello Server"
 
 RESPONSE=$(docker exec $CONTAINER_ID sh -c "echo '$TEST_MSG' | nc server 12345")
 
-
 docker rm -f $CONTAINER_ID > /dev/null
 
 if [ "$RESPONSE" = "$TEST_MSG" ]; then
