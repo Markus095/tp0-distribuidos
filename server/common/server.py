@@ -13,7 +13,7 @@ class Server:
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
     def __handle_sigterm(self):
-        logging.info("action: received_signal | signal SIGTERM | result: shutting_down")
+        logging.info("action: handle_signal | result: success | signal: SIGTERM")
         self.running = False
 
     def shutdown(self):
@@ -24,7 +24,7 @@ class Server:
                 self._server_socket.close()
                 logging.info("action: close_server_socket | result: success")
             except Exception as e:
-                logging.error(f"action: close_server_socket | result: error | error: {e}")
+                logging.error(f"action: close_server_socket | result: fail | error: {e}")
         
         logging.info("action: shutdown_server | result: success")
     
