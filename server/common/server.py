@@ -13,7 +13,7 @@ class Server:
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
     def __handle_sigterm(self):
-        logging.info("action: handle_signal | result: success | signal: SIGTERM")
+        logging.info("action: handle_signal | result: success")
         self.running = False
 
     def shutdown(self):

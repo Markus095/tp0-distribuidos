@@ -41,14 +41,18 @@ func NewClient(config ClientConfig) *Client {
 }
 
 func (c *Client) setupSignalHandler() {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM)
+    sigChan := make(chan os.Signal, 1)
+    signal.Notify(sigChan, syscall.SIGTERM)
 
-	go func() {
-		<-sigChan
-		log.Info("action: received_signal | signal: SIGTERM | result: shutting_down")
-		close(c.done)
-	}()
+    go func() {
+        <-sigChan
+        log.Info("action: received_signal | result: shutting_down")
+        close(c.done)
+        c.cleanup()
+        c.wg.Wait()
+		log.Info("action: shutdown_client | result: success")
+        os.Exit(0)
+    }()
 }
 
 func (c *Client) cleanup() {
