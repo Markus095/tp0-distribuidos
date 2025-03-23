@@ -14,7 +14,7 @@ class Server:
 
     def __handle_sigterm(self):
         logging.info("action: handle_signal | result: success")
-        self.running = False
+        self._running = False
 
     def shutdown(self):
         logging.info("action: shutdown_server | result: in_progress")

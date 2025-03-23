@@ -46,11 +46,11 @@ func (c *Client) setupSignalHandler() {
 
     go func() {
         <-sigChan
-        log.Info("action: received_signal | result: shutting_down")
+        log.Info("action: handle_signal | result: success")
         close(c.done)
         c.cleanup()
         c.wg.Wait()
-		log.Info("action: shutdown_client | result: success")
+        log.Info("action: shutdown_client | result: success")
         os.Exit(0)
     }()
 }
@@ -60,7 +60,7 @@ func (c *Client) cleanup() {
 		log.Info("action: close_connection | result: in_progress")
 		err := c.conn.Close()
 		if err != nil {
-			log.Errorf("action: close_connection | result: error | error: %v", err)
+			log.Error("action: close_connection | result: fail | error: %v", err)
 		} else {
 			log.Info("action: close_connection | result: success")
 		}
