@@ -1,6 +1,7 @@
 import socket
 import logging
 import signal
+from utils import Bet 
 
 
 class Server:
@@ -88,4 +89,52 @@ class Server:
         finally:
             self.shutdown()
 
+    def decode_bets(message: bytes) -> tuple[int, list[Bet]]:
+        """
+        Decode a binary message into client ID and list of bets.
+        Message format:
+        - 1 byte: client ID (agency)
+        - 7 bytes: number of bets
+        - For each bet (172 bytes):
+            - 64 bytes: first name (null padded)
+            - 64 bytes: last name (null padded)
+            - 32 bytes: document (null padded)
+            - 8 bytes: birthdate (YYYYMMDD)
+            - 2 bytes: number
+        """
+        # Read client ID/agency (first byte)
+        agency_id = message[0]
+        
+        # Read number of bets (next 7 bytes)
+        num_bets = int.from_bytes(message[1:8], byteorder='big')
+        
+        bets = []
+        offset = 8  # Start after header
+        
+        for _ in range(num_bets):
+            # Read FirstName (64 bytes)
+            first_name = message[offset:offset+64].split(b'\0', 1)[0].decode('utf-8')
+            offset += 64
+            
+            # Read LastName (64 bytes)
+            last_name = message[offset:offset+64].split(b'\0', 1)[0].decode('utf-8')
+            offset += 64
+            
+            # Read Document (32 bytes)
+            document = message[offset:offset+32].split(b'\0', 1)[0].decode('utf-8')
+            offset += 32
+            
+            # Read birthdate (8 bytes) and convert to YYYY-MM-DD format
+            date_str = message[offset:offset+8].decode('utf-8')
+            birthdate = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+            offset += 8
+            
+            # Read number (2 bytes)
+            number = int.from_bytes(message[offset:offset+2], byteorder='big')
+            offset += 2
+            
+            bet = Bet(str(agency_id), first_name, last_name, document, birthdate, str(number))
+            bets.append(bet)
+        
+        return agency_id, bets
     
