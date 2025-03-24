@@ -1,8 +1,10 @@
 import socket
 import logging
 import signal
-from utils import Bet 
+from utils import Bet, store_bets 
 
+HEADER_SIZE = 8  # Constant value
+BET_SIZE = 172  # Constant value
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -34,20 +36,42 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
+        Handle incoming bet registration from clients
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
-        except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            # Read the header (first 8 bytes)
+            header = client_sock.recv(HEADER_SIZE)
+            if len(header) < HEADER_SIZE:
+                raise ValueError("Incomplete header received")
+            
+            # Extract ID and number of chunks from the header
+            client_id = header[0]
+            num_chunks = int.from_bytes(header[1:HEADER_SIZE], byteorder='big')
+            
+            # Calculate the total message size
+            total_size = num_chunks * BET_SIZE
+            
+            # Read the rest of the message in a loop
+            msg = b""
+            while len(msg) < total_size:
+                chunk = client_sock.recv(min(1024, total_size - len(msg)))
+                if not chunk:
+                    raise ValueError("Connection closed before full message was received")
+                msg += chunk
+            
+            # Decode and store bets
+            bets = self.decode_bets(msg)
+            store_bets(bets)
+            
+            # Log each bet stored
+            for bet in bets:
+                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+            
+            # Send acknowledgment
+            client_sock.sendall(b"OK")
+            
+        except Exception as e:
+            logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             client_sock.close()
 
@@ -89,7 +113,7 @@ class Server:
         finally:
             self.shutdown()
 
-    def decode_bets(message: bytes) -> tuple[int, list[Bet]]:
+    def decode_bets(self, message: bytes) -> list[Bet]:
         """
         Decode a binary message into client ID and list of bets.
         Message format:
@@ -136,5 +160,5 @@ class Server:
             bet = Bet(str(agency_id), first_name, last_name, document, birthdate, str(number))
             bets.append(bet)
         
-        return agency_id, bets
+        return bets
     

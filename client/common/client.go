@@ -119,26 +119,35 @@ func (c *Client) StartClientLoop() {
 }
 
 func (c *Client) sendAndReceiveMessage(msgID int) {
-	// TODO: Modify the send to avoid short-write
-	fmt.Fprintf(
-		c.conn,
-		"[CLIENT %v] Message N°%v\n",
-		c.config.ID,
-		msgID,
-	)
-	msg, err := bufio.NewReader(c.conn).ReadString('\n')
-	c.conn.Close()
+    // Create bet from environment variables
+    bet := Bet{
+        Agency:    uint16(c.config.ID),
+        FirstName: c.config.FirstName,
+        LastName:  c.config.LastName,
+        Document:  c.config.Document,
+        Birthdate: c.config.Birthdate,
+        Number:    c.config.Number,
+    }
 
-	if err != nil {
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		return
-	}
+    // Encode bet using protocol
+    message := EncodeBets(uint8(c.config.ID), []Bet{bet})
+    
+    // Send full message
+    _, err := c.conn.Write(message)
+    if err != nil {
+        log.Errorf("action: send_bet | result: fail | error: %v", err)
+        return
+    }
 
-	log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-		c.config.ID,
-		msg,
-	)
+    // Read acknowledgment
+    response := make([]byte, 2)
+    _, err = io.ReadFull(c.conn, response)
+    if err != nil {
+        log.Errorf("action: receive_ack | result: fail | error: %v", err)
+        return
+    }
+
+    log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+        c.config.Document,
+        c.config.Number)
 }
