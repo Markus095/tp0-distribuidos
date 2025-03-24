@@ -4,7 +4,9 @@ import signal
 from utils import Bet, store_bets 
 
 HEADER_SIZE = 8  # Constant value
-BET_SIZE = 172  # Constant value
+BET_SIZE = 204  # Updated to match client's protocol (32 + 64 + 64 + 32 + 8 + 4)
+
+STORAGE_FILEPATH = "./bets.csv"
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -61,7 +63,15 @@ class Server:
             
             # Decode and store bets
             bets = self.decode_bets(msg)
+            logging.debug(f"Attempting to store bets at: {STORAGE_FILEPATH}")
             store_bets(bets)
+            
+            # Verify if file exists and its contents
+            try:
+                with open(STORAGE_FILEPATH, 'r') as f:
+                    logging.debug(f"File contents after store:\n{f.read()}")
+            except Exception as e:
+                logging.error(f"Failed to read file after storage: {e}")
             
             # Log each bet stored
             for bet in bets:
@@ -91,13 +101,9 @@ class Server:
 
     def run(self):
         """
-        Dummy Server loop
-
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
+        Server loop that accepts new connections and handles client communication
         """
-
+        logging.info("action: server_start | result: in_progress")
         try:
             while self._running:
                 try:
@@ -110,8 +116,12 @@ class Server:
                 except Exception as e:
                     if self._running:
                         logging.error(f"action: server_loop | result: error | error: {e}")
+                        # Don't exit on error, try to continue running
+        except Exception as e:
+            logging.error(f"action: server_loop | result: error | error: {e}")
         finally:
             self.shutdown()
+            logging.info("action: server_start | result: success")
 
     def decode_bets(self, message: bytes) -> list[Bet]:
         """

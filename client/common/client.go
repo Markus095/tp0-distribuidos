@@ -1,8 +1,6 @@
 package common
 
 import (
-	"bufio"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -121,7 +119,7 @@ func (c *Client) StartClientLoop() {
 func (c *Client) sendAndReceiveMessage(msgID int) {
     // Create bet from environment variables
     bet := Bet{
-        Agency:    uint16(c.config.ID),
+        Agency:    c.config.ID,
         FirstName: c.config.FirstName,
         LastName:  c.config.LastName,
         Document:  c.config.Document,
@@ -130,7 +128,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
     }
 
     // Encode bet using protocol
-    message := EncodeBets(uint8(c.config.ID), []Bet{bet})
+    message := EncodeBets([]Bet{bet})
     
     // Send full message
     _, err := c.conn.Write(message)
@@ -141,7 +139,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
 
     // Read acknowledgment
     response := make([]byte, 2)
-    _, err = io.ReadFull(c.conn, response)
+    _, err = c.conn.Read(response)
     if err != nil {
         log.Errorf("action: receive_ack | result: fail | error: %v", err)
         return
