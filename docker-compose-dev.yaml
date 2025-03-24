@@ -1,7 +1,7 @@
 name: tp0
 services:
   server:
-    container_name: server
+    container_name: central
     image: server:latest
     entrypoint: python3 /main.py
     volumes:
@@ -12,90 +12,18 @@ services:
       - testing_net
 
   client1:
-    container_name: client1
+    container_name: agencia1
     image: client:latest
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
     environment:
-      - CLI_ID=1
-      - CLI_BET_FIRSTNAME=Client1
-      - CLI_BET_LASTNAME=Lastname1
-      - CLI_BET_DOCUMENT=10000001
-      - CLI_BET_BIRTHDATE=1990-01-01
-      - CLI_BET_NUMBER=7001
-    networks:
-      - testing_net
-    depends_on:
-      - server
-
-  client2:
-    container_name: client2
-    image: client:latest
-    entrypoint: /client
-    volumes:
-      - ./client/config.yaml:/config.yaml
-    environment:
-      - CLI_ID=2
-      - CLI_BET_FIRSTNAME=Client2
-      - CLI_BET_LASTNAME=Lastname2
-      - CLI_BET_DOCUMENT=10000002
-      - CLI_BET_BIRTHDATE=1990-01-02
-      - CLI_BET_NUMBER=7002
-    networks:
-      - testing_net
-    depends_on:
-      - server
-
-  client3:
-    container_name: client3
-    image: client:latest
-    entrypoint: /client
-    volumes:
-      - ./client/config.yaml:/config.yaml
-    environment:
-      - CLI_ID=3
-      - CLI_BET_FIRSTNAME=Client3
-      - CLI_BET_LASTNAME=Lastname3
-      - CLI_BET_DOCUMENT=10000003
-      - CLI_BET_BIRTHDATE=1990-01-03
-      - CLI_BET_NUMBER=7003
-    networks:
-      - testing_net
-    depends_on:
-      - server
-
-  client4:
-    container_name: client4
-    image: client:latest
-    entrypoint: /client
-    volumes:
-      - ./client/config.yaml:/config.yaml
-    environment:
-      - CLI_ID=4
-      - CLI_BET_FIRSTNAME=Client4
-      - CLI_BET_LASTNAME=Lastname4
-      - CLI_BET_DOCUMENT=10000004
-      - CLI_BET_BIRTHDATE=1990-01-04
-      - CLI_BET_NUMBER=7004
-    networks:
-      - testing_net
-    depends_on:
-      - server
-
-  client5:
-    container_name: client5
-    image: client:latest
-    entrypoint: /client
-    volumes:
-      - ./client/config.yaml:/config.yaml
-    environment:
-      - CLI_ID=5
-      - CLI_BET_FIRSTNAME=Client5
-      - CLI_BET_LASTNAME=Lastname5
-      - CLI_BET_DOCUMENT=10000005
-      - CLI_BET_BIRTHDATE=1990-01-05
-      - CLI_BET_NUMBER=7005
+      - CLI_ID=AGENCIA1
+      - CLI_BET_FIRSTNAME='Santiago Lionel'
+      - CLI_BET_LASTNAME='Lorca'
+      - CLI_BET_DOCUMENT=30904465
+      - CLI_BET_BIRTHDATE=1999-03-17
+      - CLI_BET_NUMBER=7574
     networks:
       - testing_net
     depends_on:
