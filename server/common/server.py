@@ -63,7 +63,7 @@ class Server:
 
             # Log stored bets
             for bet in bets:
-                logging.info(f'action: bet_stored | result: success | dni: {bet.document} | number: {bet.number}')
+                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | number: {bet.number}')
 
             # Send acknowledgment
             client_sock.sendall(b"OK")
