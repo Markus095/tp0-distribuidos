@@ -8,6 +8,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"bufio"
+	"strings"
 
 	"github.com/op/go-logging"
 )
@@ -115,7 +117,7 @@ func (c *Client) StartClientLoop() {
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
-func (c *Client) sendAndReceiveMessage(msgID int, dataset string) {
+func (c *Client) sendAndReceiveMessage(msgID int) {
     // Open the dataset file
 	file, err := os.Open(DATASET_PATH)
 	if err != nil {
@@ -180,8 +182,4 @@ func (c *Client) sendAndReceiveMessage(msgID int, dataset string) {
         log.Errorf("action: receive_ack | result: fail | error: %v", err)
         return
     }
-
-    log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-        c.config.Document,
-        c.config.Number)
 }

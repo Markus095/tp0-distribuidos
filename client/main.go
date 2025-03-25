@@ -88,7 +88,7 @@ func PrintConfig(v *viper.Viper) {
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
-		v.GetInt("bets_per_batch")
+		v.GetInt("bets_per_batch"),
 	)
 }
 
@@ -110,7 +110,7 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
-		BetsPerBatch:  v.GetInt("bets_per_batch"),
+		BetsPerBatch:  uint16(v.GetInt("bets_per_batch")),
 	}
 
 	client := common.NewClient(clientConfig)

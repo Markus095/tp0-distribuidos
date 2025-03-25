@@ -17,7 +17,7 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency1.csv:/dataset.csv
+      - ./dataset/agency-1.csv:dataset.csv
     environment:
       - CLI_ID=1
       - CLI_BETS_PER_BATCH=5
@@ -32,7 +32,7 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency2.csv:/dataset.csv
+      - ./dataset/agency-2.csv:/dataset.csv
     environment:
       - CLI_ID=2
       - CLI_BETS_PER_BATCH=5
@@ -47,7 +47,7 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency3.csv:/dataset.csv
+      - ./dataset/agency-3.csv:/dataset.csv
     environment:
       - CLI_ID=3
       - CLI_BETS_PER_BATCH=5
@@ -62,7 +62,7 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency4.csv:/dataset.csv
+      - ./dataset/agency-4.csv:/dataset.csv
     environment:
       - CLI_ID=4
       - CLI_BETS_PER_BATCH=5
@@ -77,7 +77,7 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency5.csv:/dataset.csv
+      - ./dataset/agency-5.csv:/dataset.csv
     environment:
       - CLI_ID=5
       - CLI_BETS_PER_BATCH=5
