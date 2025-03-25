@@ -133,10 +133,10 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         log.Errorf("action: parse_agency_id | result: fail | error: %v", err)
         return
     }
-
+	
     // Encode bet using protocol
     message := EncodeBets(uint32(agencyID), []Bet{bet})
-    
+    log.Infof("action: encoded_bets | result: success | client_id: %v", c.config.ID)
     // Send full message
     _, err = c.conn.Write(message)
     if err != nil {

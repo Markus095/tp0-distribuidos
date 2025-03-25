@@ -6,7 +6,6 @@ services:
     entrypoint: python3 /main.py
     volumes:
       - ./server/config.ini:/config.ini
-      - ./bets.csv:/bets.csv
     environment:
       - PYTHONPATH=/server
       - PYTHONUNBUFFERED=1
