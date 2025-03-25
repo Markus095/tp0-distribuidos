@@ -1,10 +1,20 @@
 ### Ejercicio N°4:
-Modificar servidor y cliente para que ambos sistemas terminen de forma _graceful_ al recibir la signal SIGTERM. Terminar la aplicación de forma _graceful_ implica que todos los _file descriptors_ (entre los que se encuentran archivos, sockets, threads y procesos) deben cerrarse correctamente antes que el thread de la aplicación principal muera. Loguear mensajes en el cierre de cada recurso (hint: Verificar que hace el flag `-t` utilizado en el comando `docker compose down`).
+odificar la lógica de negocio tanto de los clientes como del servidor para nuestro nuevo caso de uso.
 
-### Ejercicio N°4 explicación de la solución:
-Se le agregó al servidor un nuevo parámetro: running, el cual es revisado en lugar del while true original. Se inicializa con un valor positivo, pero cambia cuando recibe el sigterm. Cuando eso sucede, se corta el loop y trata de cerrar todos los sockets y luego finaliza. 
-Por otro lado, se le agregó un waitgroup al cliente para revisar que las conexiones se cierran antes de terminar el programa y un campo "done" que se usa para avisarle a todas las rutinas cuando se solicita el cierre del cliente. También se le añadió un signal handler que funciona en una rutina separada para manejar la secuencia de cerrado y la secuencia de cierre, que cierra todas las conexiones.
+#### Cliente
+Emulará a una _agencia de quiniela_ que participa del proyecto. Existen 5 agencias. Deberán recibir como variables de entorno los campos que representan la apuesta de una persona: nombre, apellido, DNI, nacimiento, numero apostado (en adelante 'número'). Ej.: `NOMBRE=Santiago Lionel`, `APELLIDO=Lorca`, `DOCUMENTO=30904465`, `NACIMIENTO=1999-03-17` y `NUMERO=7574` respectivamente.
 
-### Dificultades encontradas
-Al principio me costó encontrar el formato apropiado para el logging, así que tuve varios commits innecesarios para probar como funcionaban distintos formatos con los tests.
-Durante bastante tiempo le pasaba una cantidad erronea de parametros al handler del SIGTERM del servidor, así que el cierre no funcionaba correctamente.
+Los campos deben enviarse al servidor para dejar registro de la apuesta. Al recibir la confirmación del servidor se debe imprimir por log: `action: apuesta_enviada | result: success | dni: ${DNI} | numero: ${NUMERO}`.
+
+#### Servidor
+Emulará a la _central de Lotería Nacional_. Deberá recibir los campos de la cada apuesta desde los clientes y almacenar la información mediante la función `store_bet(...)` para control futuro de ganadores. La función `store_bet(...)` es provista por la cátedra y no podrá ser modificada por el alumno.
+Al persistir se debe imprimir por log: `action: apuesta_almacenada | result: success | dni: ${DNI} | numero: ${NUMERO}`.
+
+#### Comunicación:
+Se deberá implementar un módulo de comunicación entre el cliente y el servidor donde se maneje el envío y la recepción de los paquetes, el cual se espera que contemple:
+* Definición de un protocolo para el envío de los mensajes.
+* Serialización de los datos.
+* Correcta separación de responsabilidades entre modelo de dominio y capa de comunicación.
+* Correcto empleo de sockets, incluyendo manejo de errores y evitando los fenómenos conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
+
+### Ejercicio N°5 explicación de solución:
