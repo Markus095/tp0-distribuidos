@@ -1,7 +1,9 @@
 import socket
 import logging
 import signal
-from utils import Bet, store_bets 
+
+from server.common.utils import Bet, store_bets
+
 
 MessageHeaderSize = 20  # Updated to match client's protocol
 BetSize = 176  # Updated to match client's protocol

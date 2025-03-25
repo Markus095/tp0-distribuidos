@@ -1,13 +1,14 @@
 name: tp0
 services:
   server:
-    container_name: central
+    container_name: server
     image: server:latest
     entrypoint: python3 /main.py
     volumes:
       - ./server/config.ini:/config.ini
       - ./bets.csv:/bets.csv
     environment:
+      - PYTHONPATH=/server
       - PYTHONUNBUFFERED=1
     networks:
       - testing_net
