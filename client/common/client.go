@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -119,7 +120,6 @@ func (c *Client) StartClientLoop() {
 func (c *Client) sendAndReceiveMessage(msgID int) {
     // Create bet from environment variables
     bet := Bet{
-        Agency:    c.config.ID,
         FirstName: c.config.FirstName,
         LastName:  c.config.LastName,
         Document:  c.config.Document,
@@ -127,11 +127,18 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         Number:    c.config.Number,
     }
 
+    // Convert agency ID to uint32
+    agencyID, err := strconv.ParseUint(c.config.ID, 10, 32)
+    if err != nil {
+        log.Errorf("action: parse_agency_id | result: fail | error: %v", err)
+        return
+    }
+
     // Encode bet using protocol
-    message := EncodeBets([]Bet{bet})
+    message := EncodeBets(uint32(agencyID), []Bet{bet})
     
     // Send full message
-    _, err := c.conn.Write(message)
+    _, err = c.conn.Write(message)
     if err != nil {
         log.Errorf("action: send_bet | result: fail | error: %v", err)
         return

@@ -3,8 +3,8 @@ import logging
 import signal
 from utils import Bet, store_bets 
 
-HEADER_SIZE = 8  # Constant value
-BET_SIZE = 204  # Updated to match client's protocol (32 + 64 + 64 + 32 + 8 + 4)
+MessageHeaderSize = 20  # Updated to match client's protocol
+BetSize = 176  # Updated to match client's protocol
 
 STORAGE_FILEPATH = "./bets.csv"
 
@@ -41,17 +41,17 @@ class Server:
         Handle incoming bet registration from clients
         """
         try:
-            # Read the header (first 8 bytes)
-            header = client_sock.recv(HEADER_SIZE)
-            if len(header) < HEADER_SIZE:
+            # Read the header (20 bytes)
+            header = client_sock.recv(MessageHeaderSize)
+            if len(header) < MessageHeaderSize:
                 raise ValueError("Incomplete header received")
             
-            # Extract ID and number of chunks from the header
-            client_id = header[0]
-            num_chunks = int.from_bytes(header[1:HEADER_SIZE], byteorder='big')
+            # Extract agency ID (first 4 bytes) and number of bets (next 16 bytes)
+            agency_id = int.from_bytes(header[0:4], byteorder='big')
+            num_bets = int.from_bytes(header[4:20], byteorder='big')
             
-            # Calculate the total message size
-            total_size = num_chunks * BET_SIZE
+            # Calculate the total message size (BetSize = 176 bytes per bet)
+            total_size = num_bets * BetSize
             
             # Read the rest of the message in a loop
             msg = b""
@@ -62,7 +62,7 @@ class Server:
                 msg += chunk
             
             # Decode and store bets
-            bets = self.decode_bets(msg)
+            bets = self.decode_bets(header, msg)
             logging.debug(f"Attempting to store bets at: {STORAGE_FILEPATH}")
             store_bets(bets)
             
@@ -123,27 +123,28 @@ class Server:
             self.shutdown()
             logging.info("action: server_start | result: success")
 
-    def decode_bets(self, message: bytes) -> list[Bet]:
+    def decode_bets(self, header: bytes, message: bytes) -> list[Bet]:
         """
         Decode a binary message into client ID and list of bets.
         Message format:
-        - 1 byte: client ID (agency)
-        - 7 bytes: number of bets
-        - For each bet (172 bytes):
+        Header (20 bytes):
+            - 4 bytes: agency ID
+            - 16 bytes: number of bets
+        For each bet (176 bytes):
             - 64 bytes: first name (null padded)
             - 64 bytes: last name (null padded)
             - 32 bytes: document (null padded)
             - 8 bytes: birthdate (YYYYMMDD)
-            - 2 bytes: number
+            - 8 bytes: number
         """
-        # Read client ID/agency (first byte)
-        agency_id = message[0]
+        # Read agency ID from header (first 4 bytes)
+        agency_id = int.from_bytes(header[0:4], byteorder='big')
         
-        # Read number of bets (next 7 bytes)
-        num_bets = int.from_bytes(message[1:8], byteorder='big')
+        # Read number of bets from header (next 16 bytes)
+        num_bets = int.from_bytes(header[4:20], byteorder='big')
         
         bets = []
-        offset = 8  # Start after header
+        offset = 0
         
         for _ in range(num_bets):
             # Read FirstName (64 bytes)
@@ -163,9 +164,9 @@ class Server:
             birthdate = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
             offset += 8
             
-            # Read number (2 bytes)
-            number = int.from_bytes(message[offset:offset+2], byteorder='big')
-            offset += 2
+            # Read number (8 bytes)
+            number = int.from_bytes(message[offset:offset+8], byteorder='big')
+            offset += 8
             
             bet = Bet(str(agency_id), first_name, last_name, document, birthdate, str(number))
             bets.append(bet)

@@ -19,7 +19,7 @@ services:
     volumes:
       - ./client/config.yaml:/config.yaml
     environment:
-      - CLI_ID=AGENCIA1
+      - CLI_ID=1
       - CLI_BET_FIRSTNAME='Santiago Lionel'
       - CLI_BET_LASTNAME='Lorca'
       - CLI_BET_DOCUMENT=30904465
