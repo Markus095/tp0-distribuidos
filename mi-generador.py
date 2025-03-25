@@ -48,7 +48,7 @@ def add_client_to_yaml(filename, client_number, bets_per_batch):
             file.write("    entrypoint: /client\n")
             file.write("    volumes:\n")
             file.write("      - ./client/config.yaml:/config.yaml\n")
-            file.write(f"      - ./dataset/agency{client_number}.csv:/dataset.csv\n")
+            file.write(f"      - ./dataset/agency-{client_number}.csv:/dataset-{client_number}.csv\n")
             file.write("    environment:\n")
             file.write(f"      - CLI_ID={client_number}\n")
             file.write(f"      - CLI_BETS_PER_BATCH={bets_per_batch}\n")

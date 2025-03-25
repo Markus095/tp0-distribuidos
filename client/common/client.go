@@ -10,13 +10,13 @@ import (
 	"time"
 	"bufio"
 	"strings"
+	"fmt"
 
 	"github.com/op/go-logging"
 )
 
 var log = logging.MustGetLogger("log")
 
-const DATASET_PATH = "/dataset.csv"
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
@@ -118,8 +118,9 @@ func (c *Client) StartClientLoop() {
 }
 
 func (c *Client) sendAndReceiveMessage(msgID int) {
+	var datasetPath = fmt.Sprintf("dataset-%s.csv", c.config.ID)
     // Open the dataset file
-	file, err := os.Open(DATASET_PATH)
+	file, err := os.Open(datasetPath)
 	if err != nil {
 		log.Errorf("action: open_dataset | result: fail | error: %v", err)
 		return
