@@ -2,7 +2,8 @@ import sys
 
 def main(argc=len(sys.argv), argv=sys.argv):
     filename = argv[1]
-    number_of_clients = int(argv[2])
+    number_of_clients = 5
+    bets_per_batch = int(argv[2])
     if number_of_clients < 1:
         print("Number of clients must be greater than 0.")
         return
@@ -11,7 +12,7 @@ def main(argc=len(sys.argv), argv=sys.argv):
             
             add_server_to_yaml(filename)
             for i in range(1, number_of_clients + 1):
-                add_client_to_yaml(filename, i)
+                add_client_to_yaml(filename, i, bets_per_batch)
             add_network_to_yaml(filename)    
         print(f"YAML file '{filename}' created successfully.")
     except Exception as e:
@@ -38,7 +39,7 @@ def add_server_to_yaml(filename):
     
 
 
-def add_client_to_yaml(filename, client_number):
+def add_client_to_yaml(filename, client_number, bets_per_batch):
     try:
         with open(filename, 'a') as file:
             file.write(f"  client{client_number}:\n")
@@ -47,13 +48,10 @@ def add_client_to_yaml(filename, client_number):
             file.write("    entrypoint: /client\n")
             file.write("    volumes:\n")
             file.write("      - ./client/config.yaml:/config.yaml\n")
+            file.write(f"      - ./dataset/agency{client_number}.csv:/dataset.csv\n")
             file.write("    environment:\n")
             file.write(f"      - CLI_ID={client_number}\n")
-            file.write(f"      - CLI_BET_FIRSTNAME=Client{client_number}\n")
-            file.write(f"      - CLI_BET_LASTNAME=Lastname{client_number}\n")
-            file.write(f"      - CLI_BET_DOCUMENT={10000000 + client_number}\n")
-            file.write(f"      - CLI_BET_BIRTHDATE=1990-01-{client_number:02d}\n")
-            file.write(f"      - CLI_BET_NUMBER={7000 + client_number}\n")
+            file.write(f"      - CLI_BETS_PER_BATCH={bets_per_batch}\n")
             file.write("    networks:\n")
             file.write("      - testing_net\n")
             file.write("    depends_on:\n")

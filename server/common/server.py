@@ -61,9 +61,7 @@ class Server:
             bets = self.decode_bets(agency_id, num_bets, msg)
             store_bets(bets)
 
-            # Log stored bets
-            for bet in bets:
-                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | number: {bet.number}')
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {num_bets}")
 
             # Send acknowledgment
             client_sock.sendall(b"OK")

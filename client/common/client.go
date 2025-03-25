@@ -14,17 +14,15 @@ import (
 
 var log = logging.MustGetLogger("log")
 
+const DATASET_PATH = "/dataset.csv"
+
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
 	ID            string
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
-	FirstName     string
-	LastName      string
-	Document      string
-	Birthdate     string
-	Number        uint16
+	BetsPerBatch        uint16
 }
 
 // Client Entity that encapsulates how
@@ -117,26 +115,57 @@ func (c *Client) StartClientLoop() {
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
-func (c *Client) sendAndReceiveMessage(msgID int) {
-    // Create bet from environment variables
-    bet := Bet{
-        FirstName: c.config.FirstName,
-        LastName:  c.config.LastName,
-        Document:  c.config.Document,
-        Birthdate: c.config.Birthdate,
-        Number:    c.config.Number,
-    }
-
-    // Convert agency ID to uint32
-    agencyID, err := strconv.ParseUint(c.config.ID, 10, 32)
-    if err != nil {
-        log.Errorf("action: parse_agency_id | result: fail | error: %v", err)
-        return
-    }
-	
-    // Encode bet using protocol
-    message := EncodeBets(uint32(agencyID), []Bet{bet})
-    log.Infof("action: encoded_bets | result: success | client_id: %v", c.config.ID)
+func (c *Client) sendAndReceiveMessage(msgID int, dataset string) {
+    // Open the dataset file
+	file, err := os.Open(DATASET_PATH)
+	if err != nil {
+		log.Errorf("action: open_dataset | result: fail | error: %v", err)
+		return
+	}
+	defer file.Close()
+ 
+	// Convert agency ID to uint32
+	agencyID, err := strconv.ParseUint(c.config.ID, 10, 32)
+	if err != nil {
+		log.Errorf("action: parse_agency_id | result: fail | error: %v", err)
+		return
+	}
+ 
+	// Read the dataset line by line
+	scanner := bufio.NewScanner(file)
+	var bets []Bet
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Split(line, ",")
+		if len(fields) < 5 {
+			log.Errorf("action: parse_line | result: fail | error: invalid_line_format | line: %v", line)
+			continue
+		}
+ 
+		// Create a bet from the line
+		bet := Bet{
+			FirstName: fields[0],
+			LastName:  fields[1],
+			Document:  fields[2],
+			Birthdate: fields[3],
+		}
+		number, err := strconv.ParseUint(fields[4], 10, 16)
+		if err != nil {
+			log.Errorf("action: parse_number | result: fail | error: %v | line: %v", err, line)
+			continue
+		}
+		bet.Number = uint16(number)
+		bets = append(bets, bet)
+	}
+ 
+	if err := scanner.Err(); err != nil {
+		log.Errorf("action: read_dataset | result: fail | error: %v", err)
+		return
+	}
+ 
+	// Encode bets using protocol
+	message := EncodeBets(uint32(agencyID), bets)
+	log.Infof("action: encoded_bets | result: success | client_id: %v | bets_count: %d", c.config.ID, len(bets))
     // Send full message
     _, err = c.conn.Write(message)
     if err != nil {

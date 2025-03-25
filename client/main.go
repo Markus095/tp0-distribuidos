@@ -37,12 +37,7 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "amount")
 	v.BindEnv("log", "level")
-	// Add new bet-related env vars
-	v.BindEnv("bet", "firstname")
-	v.BindEnv("bet", "lastname")
-	v.BindEnv("bet", "document")
-	v.BindEnv("bet", "birthdate")
-	v.BindEnv("bet", "number")
+	v.BindEnv("bets_per_batch")
 
 	// Try to read configuration from config file. If config file
 	// does not exists then ReadInConfig will fail but configuration
@@ -93,6 +88,7 @@ func PrintConfig(v *viper.Viper) {
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
+		v.GetInt("bets_per_batch")
 	)
 }
 
@@ -114,11 +110,7 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
-		FirstName:     v.GetString("bet.firstname"),
-		LastName:      v.GetString("bet.lastname"),
-		Document:      v.GetString("bet.document"),
-		Birthdate:     v.GetString("bet.birthdate"),
-		Number:        uint16(v.GetInt("bet.number")),
+		BetsPerBatch:  v.GetInt("bets_per_batch"),
 	}
 
 	client := common.NewClient(clientConfig)
