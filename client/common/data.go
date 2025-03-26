@@ -6,6 +6,7 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
+	"encoding/binary"
 )
 type Bet struct {
 	FirstName string
@@ -63,4 +64,18 @@ func processLine(line string) (Bet, error) {
 		Birthdate: fields[3],
 		Number:    uint16(number),
 	}, nil
+}
+
+func DecodeWinners(winnerBytes []byte) ([]uint16, error) {
+    if len(winnerBytes)%2 != 0 {
+        return nil, fmt.Errorf("invalid winners payload size")
+    }
+
+    var winners []uint16
+    for i := 0; i < len(winnerBytes); i += 2 {
+        winner := binary.BigEndian.Uint16(winnerBytes[i : i+2])
+        winners = append(winners, winner)
+    }
+
+    return winners, nil
 }

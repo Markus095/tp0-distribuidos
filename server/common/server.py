@@ -1,7 +1,7 @@
 import socket
 import logging
 import signal
-from common.bet_processing import process_bets
+from common.bet_processing import process_bets, obtain_winners_documents
 
 # Fix header and bet sizes
 MessageHeaderSize = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
@@ -100,7 +100,7 @@ class Server:
         try:
             logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id}")
             self._notified_agencies.add(agency_id)
-            if self._notified_agencies.len() == 5:
+            if len(self._notified_agencies) == 5:
                 self.realizar_sorteo()
             client_sock.sendall(b"OK")
             return True
@@ -114,7 +114,7 @@ class Server:
         """
         try:
 
-            winners = self.obtain_winners()
+            winners = obtain_winners_documents()
             for agency_id in self._notified_agencies:
                 for winner in winners:
                     if winner.agency == agency_id:
@@ -131,10 +131,11 @@ class Server:
         """
         try:
             logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id}")
-            if self.winners.len() == 0:
-                client_sock.sendall(b"NO_WINNERS")
+            if agency_id in self.winners:
+                winners_list = "\n".join(self.winners[agency_id]).encode('utf-8')
+                client_sock.sendall(winners_list)
             else:
-                client_sock.sendall(self.winners[agency_id])
+                client_sock.sendall(b"NO_WINNERS")
                 
             return True
         except Exception as e:

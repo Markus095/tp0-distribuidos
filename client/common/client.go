@@ -104,4 +104,46 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
 		log.Infof("action: batch_sent | result: success | batch_size: %d", len(batch))
 	}
 	
+	if err := c.net.SendMessage(message); err != nil {
+		return
+	}
+	_, err = c.net.ReceiveAck()
+	if err != nil {
+		return
+	}
+	log.Infof("action: batch_sent | result: success | batch_size: %d", len(batch))
+
+	// Notify the server that all bets have been sent
+	notification := EncodeNotification(uint32(agencyID))
+	if err := c.net.SendMessage(notification); err != nil {
+		log.Errorf("action: notify_server | result: fail | error: %v", err)
+		return
+	}
+	_, err = c.net.ReceiveAck()
+	if err != nil {
+		return
+	}
+	log.Infof("action: notify_server | result: success | client_id: %v", c.config.ID)
+
+	winnersMessage := EncodeWinnersRequest(uint32(agencyID))
+    backoff := 1 * time.Second // Initial backoff duration
+    maxBackoff := 32 * time.Second
+    for {
+        if err := c.net.SendMessage(winnersMessage); err != nil {
+            log.Errorf("action: request_winners | result: fail | error: %v", err)
+            return
+        }
+
+        _, winners, err := c.net.ReceiveWinners()
+        if err != nil {
+            log.Errorf("action: receive_winners | result: fail | error: %v", err)
+            return
+        }
+
+
+        // Parse and log the winners
+        winnersList := DecodeWinners(winners) // Assuming DecodeWinners parses the response
+        log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", len(winnersList))
+        break
+    }
 }
