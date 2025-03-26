@@ -16,7 +16,7 @@ type Bet struct {
 }
 
 func ReadDataset(clientID string) ([]Bet, error) {
-	var datasetPath = fmt.Sprintf("dataset-%s.csv", clientID)
+	var datasetPath = fmt.Sprintf("data/agency-%s.csv", clientID)
 	file, err := os.Open(datasetPath)
 	if err != nil {
 		log.Errorf("action: open_dataset | result: fail | error: %v", err)

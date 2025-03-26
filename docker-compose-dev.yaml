@@ -25,6 +25,10 @@ services:
     depends_on:
       - server
 
+volumes:
+  data_volume:
+    driver: local
+
 networks:
   testing_net:
     ipam:

@@ -12,6 +12,7 @@ def main(argc=len(sys.argv), argv=sys.argv):
             add_server_to_yaml(filename)
             for i in range(1, number_of_clients + 1):
                 add_client_to_yaml(filename, i)
+            add_volume_to_yaml(filename)
             add_network_to_yaml(filename)    
         print(f"YAML file '{filename}' created successfully.")
     except Exception as e:
@@ -54,6 +55,16 @@ def add_client_to_yaml(filename, client_number):
             file.write("      - testing_net\n")
             file.write("    depends_on:\n")
             file.write("      - server\n\n")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+        
+def add_volume_to_yaml(filename):
+    try:
+        with open(filename, 'a') as file:
+            file.write("volumes:\n")
+            file.write("  data_volume:\n")
+            file.write("    driver: local\n\n")
     except Exception as e:
         print(f"An error occurred: {e}")
 
