@@ -85,14 +85,19 @@ class Server:
         Handles the client connection, delegating reading and processing.
         """
         try:
-            result = self._read_client_data(client_sock)
-            if result:
+            while self._running:  # 🔄 Loop to handle multiple messages per client connection
+                result = self._read_client_data(client_sock)
+                if not result:
+                    break  # 🚨 Exit loop if client disconnects or error occurs
+
                 agency_id, num_bets, bets_data = result
                 success = self._process_client_data(agency_id, num_bets, bets_data)
 
                 # Send acknowledgment
                 client_sock.sendall(b"OK" if success else b"ERROR")
 
+        except Exception as e:
+            logging.error(f"action: handle_client | result: fail | error: {e}")
         finally:
             client_sock.close()
 

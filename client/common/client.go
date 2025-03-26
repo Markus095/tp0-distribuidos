@@ -94,13 +94,21 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
 		log.Errorf("action: parse_agency_id | result: fail | error: %v", err)
 		return
 	}
-	message := EncodeBets(uint32(agencyID), bets)
-	if err := c.net.SendMessage(message); err != nil {
-		return
+	for i := 0; i < len(bets); i += int(c.config.BetsPerBatch) {
+		end := i + int(c.config.BetsPerBatch)
+		if end > len(bets) {
+			end = len(bets)
+		}
+		batch := bets[i:end]
+		message := EncodeBets(uint32(agencyID), batch)
+		if err := c.net.SendMessage(message); err != nil {
+			return
+		}
+		_, err = c.net.ReceiveAck()
+		if err != nil {
+			return
+		}
+		log.Infof("action: batch_sent | result: success | batch_size: %d", len(batch))
 	}
-
-	_, err = c.net.ReceiveAck()
-	if err != nil {
-		return
-	}
+	
 }
