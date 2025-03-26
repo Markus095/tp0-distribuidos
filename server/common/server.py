@@ -1,11 +1,14 @@
 import socket
 import logging
 import signal
-from common.utils import Bet, store_bets
+from common.bet_processing import process_bets
 
 # Fix header and bet sizes
-MessageHeaderSize = 6  # 4 bytes agencyNumber + 2 bytes num_bets
+MessageHeaderSize = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
 BetSize = 170  # 64 + 64 + 32 + 8 + 2 (matches client)
+betMessageType = 1
+notificationMessageType = 2
+requestWinnerMessageType = 3
 
 STORAGE_FILEPATH = "./bets.csv"
 
@@ -15,6 +18,8 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._running = True
+        self._notified_agencies = set()
+        self.winners = {}
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
     def __handle_sigterm(self, signum, frame):
@@ -31,13 +36,12 @@ class Server:
                 logging.error(f"action: close_server_socket | result: fail | error: {e}")
         logging.info("action: shutdown_server | result: success")
 
-    def _read_client_data(self, client_sock):
+    def _handle_incoming_messages(self, client_sock):
         """
         Reads data from the client socket.
         Returns: (agency_id, num_bets, bets_data) or raises an exception.
         """
         try:
-            # Read the header (6 bytes)
             header = client_sock.recv(MessageHeaderSize)
 
             if not header:
@@ -47,59 +51,104 @@ class Server:
             if len(header) < MessageHeaderSize:
                 raise ValueError("Incomplete header received")
 
-            agency_id = int.from_bytes(header[0:4], byteorder='big')
-            num_bets = int.from_bytes(header[4:6], byteorder='big')
-
-            logging.debug(f"Received header: agency_id={agency_id}, num_bets={num_bets}")
-
-            total_size = num_bets * BetSize
-            msg = b""
-
-            # Read the bets
-            while len(msg) < total_size:
-                chunk = client_sock.recv(min(1024, total_size - len(msg)))
-                if not chunk:
-                    raise ValueError("Connection closed before full message was received")
-                msg += chunk
-
-            return agency_id, num_bets, msg
-
+            return self._handle_message(header, client_sock)
         except Exception as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
             return None
 
+    def _handle_message(self, header, client_sock):
+        agency_id = int.from_bytes(header[0:4], byteorder='big')
+        message_type = int.from_bytes(header[4:6], byteorder='big')
+        num_bets = int.from_bytes(header[6:8], byteorder='big')
+        if( 1 > message_type > 3):
+            raise ValueError("Invalid message type")
+        elif( message_type == betMessageType):
+            return self._handle_bets_message(agency_id, num_bets, client_sock)
+        elif( message_type == notificationMessageType):
+            return self._handle_notification_message(agency_id, client_sock)
+        elif( message_type == requestWinnerMessageType):
+            return self._handle_winners_request_message(agency_id, client_sock)
 
-    def _process_client_data(self, agency_id, num_bets, bets_data):
+    def _handle_bets_message(self, agency_id, num_bets, client_sock):
         """
         Decodes and processes the bet data.
         """
         try:
-            bets = self.decode_bets(agency_id, num_bets, bets_data)
-            store_bets(bets)
+            total_size = num_bets * BetSize
+            bets_data = b""
 
+            while len(bets_data) < total_size:
+                chunk = client_sock.recv(min(1024, total_size - len(bets_data)))
+                if not chunk:
+                    raise ValueError("Connection closed before full message was received")
+                bets_data += chunk
+            
+            process_bets(agency_id, num_bets, bets_data)
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {num_bets}")
+            client_sock.sendall(b"OK")
             return True
+
         except Exception as e:
             logging.error(f"action: process_bets | result: fail | error: {e}")
             logging.error(f"action: apuesta_recibida | result: fail | cantidad: ${num_bets}")
             return False
+    
+    def _handle_notification_message(self, agency_id, client_sock):
+        """
+        Notifies the agency that the bets have been processed.
+        """
+        try:
+            logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id}")
+            self._notified_agencies.add(agency_id)
+            if self._notified_agencies.len() == 5:
+                self.realizar_sorteo()
+            client_sock.sendall(b"OK")
+            return True
+        except Exception as e:
+            logging.error(f"action: notificacion_recibida | result: fail | error: {e}")
+            return False
+        
+    def realizar_sorteo(self):
+        """
+        Selects the winners and sends the notifications.
+        """
+        try:
 
+            winners = self.obtain_winners()
+            for agency_id in self._notified_agencies:
+                for winner in winners:
+                    if winner.agency == agency_id:
+                        self.winners[agency_id] = winner
+            logging.info("action: sorteo_realizado | result: success")
+            return True
+        except Exception as e:
+            logging.error(f"action: sorteo_realizado | result: fail | error: {e}")
+            return False    
+
+    def _handle_winners_request_message(self, agency_id, client_sock):
+        """
+        Sends the winners to the agency.
+        """
+        try:
+            logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id}")
+            if self.winners.len() == 0:
+                client_sock.sendall(b"NO_WINNERS")
+            else:
+                client_sock.sendall(self.winners[agency_id])
+                
+            return True
+        except Exception as e:
+            logging.error(f"action: solicitud_ganadores | result: fail | error: {e}")
+            return False
 
     def __handle_client_connection(self, client_sock):
         """
         Handles the client connection, delegating reading and processing.
         """
         try:
-            while self._running:  # 🔄 Loop to handle multiple messages per client connection
-                result = self._read_client_data(client_sock)
-                if not result:
+            while self._running:  
+                if self._handle_incoming_messages(client_sock) == False:
                     break
-
-                agency_id, num_bets, bets_data = result
-                success = self._process_client_data(agency_id, num_bets, bets_data)
-
-                # Send acknowledgment
-                client_sock.sendall(b"OK" if success else b"ERROR")
 
         except Exception as e:
             logging.error(f"action: handle_client | result: fail | error: {e}")
@@ -131,38 +180,3 @@ class Server:
         finally:
             self.shutdown()
             logging.info("action: server_shutdown | result: success")
-
-    def decode_bets(self, agency_id, num_bets, message: bytes) -> list[Bet]:
-        """
-        Decode a binary message into bets.
-        """
-        bets = []
-        offset = 0
-
-        for _ in range(num_bets):
-            # Read FirstName (64 bytes)
-            first_name = message[offset:offset+64].split(b'\0', 1)[0].decode('utf-8').strip()
-            offset += 64
-
-            # Read LastName (64 bytes)
-            last_name = message[offset:offset+64].split(b'\0', 1)[0].decode('utf-8').strip()
-            offset += 64
-
-            # Read Document (32 bytes)
-            document = message[offset:offset+32].split(b'\0', 1)[0].decode('utf-8').strip()
-            offset += 32
-
-            # Read birthdate (8 bytes) and convert to YYYY-MM-DD format
-            date_str = message[offset:offset+8].decode('utf-8')
-            birthdate = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-            offset += 8
-
-            # Read number (2 bytes) instead of 8
-            number = int.from_bytes(message[offset:offset+2], byteorder='big')
-            offset += 2  # Updated to match client
-
-            # Create Bet object
-            bet = Bet(str(agency_id), first_name, last_name, document, birthdate, str(number))
-            bets.append(bet)
-
-        return bets

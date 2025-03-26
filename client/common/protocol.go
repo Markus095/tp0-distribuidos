@@ -6,13 +6,19 @@ import (
 )
 
 const (
-	MessageHeaderSize  = 6 
-	MaxFirstNameLength = 64
-	MaxLastNameLength  = 64
-	MaxDocumentLength  = 32
-	MaxDateLength      = 8
-	MaxBetCodeLength   = 2
-	BetSize            = MaxFirstNameLength + MaxLastNameLength + MaxDocumentLength + MaxDateLength + MaxBetCodeLength
+	MessageHeaderSize     = 8
+	AgencyNumberSize      = 4
+	MessageTypeSize       = 2
+	AmountOfBetsSize      = 2 
+	MaxFirstNameLength    = 64
+	MaxLastNameLength     = 64
+	MaxDocumentLength     = 32
+	MaxDateLength         = 8
+	MaxBetCodeLength      = 2
+	BetSize               = MaxFirstNameLength + MaxLastNameLength + MaxDocumentLength + MaxDateLength + MaxBetCodeLength
+	BetsMessage 	      = 1
+	NotificationMessage   = 2
+	WinnersRequestMessage = 3
 )
 
 func EncodeBets(agencyNumber uint32, bets []Bet) []byte {
@@ -20,7 +26,8 @@ func EncodeBets(agencyNumber uint32, bets []Bet) []byte {
 	message := make([]byte, messageSize)
 
 	binary.BigEndian.PutUint32(message[0:4], agencyNumber)
-	binary.BigEndian.PutUint16(message[4:6], uint16(len(bets)))
+	binary.BigEndian.PutUint32(message[4:6], BetsMessage)
+	binary.BigEndian.PutUint16(message[6:8], uint16(len(bets)))
 
 	offset := MessageHeaderSize
 	for _, bet := range bets {
@@ -41,5 +48,21 @@ func EncodeBets(agencyNumber uint32, bets []Bet) []byte {
 		offset += MaxBetCodeLength
 	}
 
+	return message
+}
+
+func EncodeNotification(agencyNumber uint32) []byte {
+	message := make([]byte, MessageHeaderSize)
+	binary.BigEndian.PutUint32(message[0:4], agencyNumber)
+	binary.BigEndian.PutUint32(message[4:6], NotificationMessage)
+	binary.BigEndian.PutUint16(message[6:8], uint16(len(bets)))
+	return message
+}
+
+func EncodeWinnersRequest(agencyNumber uint32) []byte {
+	message := make([]byte, MessageHeaderSize)
+	binary.BigEndian.PutUint32(message[0:4], agencyNumber)
+	binary.BigEndian.PutUint32(message[4:6], WinnersRequestMessage)
+	binary.BigEndian.PutUint16(message[6:8], uint16(len(bets)))
 	return message
 }
