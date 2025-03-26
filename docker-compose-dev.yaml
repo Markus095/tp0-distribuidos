@@ -17,7 +17,7 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ././data/agency-1.csv:/dataset-1.csv
+      - ./.data:/data
     environment:
       - CLI_ID=1
     networks:

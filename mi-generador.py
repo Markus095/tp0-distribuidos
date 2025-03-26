@@ -48,7 +48,7 @@ def add_client_to_yaml(filename, client_number):
             file.write("    entrypoint: /client\n")
             file.write("    volumes:\n")
             file.write("      - ./client/config.yaml:/config.yaml\n")
-            file.write(f"      - ././data/agency-{client_number}.csv:/dataset-{client_number}.csv\n")
+            file.write(f"      - ./.data:/data\n")
             file.write("    environment:\n")
             file.write(f"      - CLI_ID={client_number}\n")
             file.write("    networks:\n")
