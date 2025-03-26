@@ -83,6 +83,7 @@ func (c *Client) StartClientLoop() {
 
 	c.wg.Wait()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	time.Sleep(2)
 }
 
 func (c *Client) sendAndReceiveMessage(msgID int) {
