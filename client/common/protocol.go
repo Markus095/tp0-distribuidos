@@ -15,15 +15,6 @@ const (
 	BetSize            = MaxFirstNameLength + MaxLastNameLength + MaxDocumentLength + MaxDateLength + MaxBetCodeLength
 )
 
-// Bet represents a single betting record
-type Bet struct {
-	FirstName string
-	LastName  string
-	Document  string
-	Birthdate string
-	Number    uint16
-}
-
 func EncodeBets(agencyNumber uint32, bets []Bet) []byte {
 	messageSize := MessageHeaderSize + len(bets)*BetSize
 	message := make([]byte, messageSize)
