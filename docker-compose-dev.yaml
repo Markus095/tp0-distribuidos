@@ -17,10 +17,10 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency-1.csv:/dataset-1.csv
+      - ././data/agency-1.csv:/dataset-1.csv
     environment:
       - CLI_ID=1
-      - CLI_BETS_PER_BATCH=1
+      - CLI_BETS_PER_BATCH=20
     networks:
       - testing_net
     depends_on:
@@ -32,10 +32,10 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency-2.csv:/dataset-2.csv
+      - ././data/agency-2.csv:/dataset-2.csv
     environment:
       - CLI_ID=2
-      - CLI_BETS_PER_BATCH=1
+      - CLI_BETS_PER_BATCH=20
     networks:
       - testing_net
     depends_on:
@@ -47,10 +47,10 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency-3.csv:/dataset-3.csv
+      - ././data/agency-3.csv:/dataset-3.csv
     environment:
       - CLI_ID=3
-      - CLI_BETS_PER_BATCH=1
+      - CLI_BETS_PER_BATCH=20
     networks:
       - testing_net
     depends_on:
@@ -62,10 +62,10 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency-4.csv:/dataset-4.csv
+      - ././data/agency-4.csv:/dataset-4.csv
     environment:
       - CLI_ID=4
-      - CLI_BETS_PER_BATCH=1
+      - CLI_BETS_PER_BATCH=20
     networks:
       - testing_net
     depends_on:
@@ -77,10 +77,10 @@ services:
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./dataset/agency-5.csv:/dataset-5.csv
+      - ././data/agency-5.csv:/dataset-5.csv
     environment:
       - CLI_ID=5
-      - CLI_BETS_PER_BATCH=1
+      - CLI_BETS_PER_BATCH=20
     networks:
       - testing_net
     depends_on:
