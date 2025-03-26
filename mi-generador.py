@@ -2,9 +2,8 @@ import sys
 
 def main(argc=len(sys.argv), argv=sys.argv):
     filename = argv[1]
-    number_of_clients = 5
-    bets_per_batch = int(argv[2])
-    if number_of_clients < 1:
+    number_of_clients = int(argv[2])
+    if number_of_clients < 1 :
         print("Number of clients must be greater than 0.")
         return
     try:
@@ -12,7 +11,7 @@ def main(argc=len(sys.argv), argv=sys.argv):
             
             add_server_to_yaml(filename)
             for i in range(1, number_of_clients + 1):
-                add_client_to_yaml(filename, i, bets_per_batch)
+                add_client_to_yaml(filename, i)
             add_network_to_yaml(filename)    
         print(f"YAML file '{filename}' created successfully.")
     except Exception as e:
@@ -39,7 +38,7 @@ def add_server_to_yaml(filename):
     
 
 
-def add_client_to_yaml(filename, client_number, bets_per_batch):
+def add_client_to_yaml(filename, client_number):
     try:
         with open(filename, 'a') as file:
             file.write(f"  client{client_number}:\n")
@@ -51,7 +50,6 @@ def add_client_to_yaml(filename, client_number, bets_per_batch):
             file.write(f"      - ././data/agency-{client_number}.csv:/dataset-{client_number}.csv\n")
             file.write("    environment:\n")
             file.write(f"      - CLI_ID={client_number}\n")
-            file.write(f"      - CLI_BETS_PER_BATCH={bets_per_batch}\n")
             file.write("    networks:\n")
             file.write("      - testing_net\n")
             file.write("    depends_on:\n")
