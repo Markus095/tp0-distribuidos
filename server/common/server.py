@@ -11,6 +11,9 @@ notificationMessageType = 2
 requestWinnerMessageType = 3
 
 STORAGE_FILEPATH = "./bets.csv"
+ACK_ANSWER = 1
+WINNERS_ANSWER = 2
+ANSWER_HEADER_SIZE = 4 
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -35,6 +38,13 @@ class Server:
             except Exception as e:
                 logging.error(f"action: close_server_socket | result: fail | error: {e}")
         logging.info("action: shutdown_server | result: success")
+
+    def _send_ack(self, client_sock):
+        try:
+            response = ACK_ANSWER.to_bytes(2, byteorder='big') + (0).to_bytes(2, byteorder='big')
+            client_sock.sendall(response)
+        except Exception as e:
+            logging.error(f"action: send_ack | result: fail | error: {e}")
 
     def _handle_incoming_messages(self, client_sock):
         """
@@ -85,7 +95,7 @@ class Server:
             
             process_bets(agency_id, num_bets, bets_data)
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {num_bets}")
-            client_sock.sendall(b"OK")
+            self._send_ack(client_sock)
             return True
 
         except Exception as e:
@@ -102,7 +112,7 @@ class Server:
             self._notified_agencies.add(agency_id)
             if len(self._notified_agencies) == 5:
                 self.realizar_sorteo()
-            client_sock.sendall(b"OK")
+            self._send_ack(client_sock)
             return True
         except Exception as e:
             logging.error(f"action: notificacion_recibida | result: fail | error: {e}")
@@ -124,6 +134,14 @@ class Server:
         except Exception as e:
             logging.error(f"action: sorteo_realizado | result: fail | error: {e}")
             return False    
+        
+    def _send_winners(self, client_sock, winners_list):
+        try:
+            payload = b"".join(winner.to_bytes(2, byteorder='big') for winner in winners_list)
+            response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + len(payload).to_bytes(2, byteorder='big') + payload
+            client_sock.sendall(response)
+        except Exception as e:
+            logging.error(f"action: send_winners | result: fail | error: {e}")
 
     def _handle_winners_request_message(self, agency_id, client_sock):
         """
@@ -133,9 +151,10 @@ class Server:
             logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id}")
             if agency_id in self.winners:
                 winners_list = "\n".join(self.winners[agency_id]).encode('utf-8')
-                client_sock.sendall(winners_list)
+                self._send_winners(client_sock, winners_list)
             else:
-                client_sock.sendall(b"NO_WINNERS")
+                response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + (0).to_bytes(2, byteorder='big')
+                client_sock.sendall(response)
                 
             return True
         except Exception as e:
