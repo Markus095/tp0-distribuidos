@@ -59,25 +59,27 @@ func (c *Client) cleanup() {
 func (c *Client) StartClientLoop() {
 	c.setupSignalHandler()
 
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
-		select {
-		case <-c.done:
-			log.Info("action: client_loop | result: received_shutdown_signal")
-			return
-		default:
-			if err := c.net.CreateClientSocket(c.config.ServerAddress); err != nil {
-				return
-			}
+	if err := c.net.CreateClientSocket(c.config.ServerAddress); err != nil {
+        log.Errorf("action: create_client_socket | result: fail | error: %v", err)
+        return
+    }
+    defer c.net.CloseConnection() // Ensure the connection is closed after the loop finishes
 
-			c.wg.Add(1)
-			go func(id int) {
-				defer c.wg.Done()
-				c.sendAndReceiveMessage(id)
-			}(msgID)
+    for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+        select {
+        case <-c.done:
+            log.Info("action: client_loop | result: received_shutdown_signal")
+            return
+        default:
+            c.wg.Add(1)
+            go func(id int) {
+                defer c.wg.Done()
+                c.sendAndReceiveMessage(id)
+            }(msgID)
 
-			time.Sleep(c.config.LoopPeriod)
-		}
-	}
+            time.Sleep(c.config.LoopPeriod)
+        }
+    }
 
 	c.wg.Wait()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
