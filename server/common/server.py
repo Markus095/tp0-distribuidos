@@ -54,12 +54,13 @@ class Server:
         try:
             header = client_sock.recv(MessageHeaderSize)
 
-            if not header:
-                logging.info("action: receive_message | result: success")
+            if not header:  
+                logging.info("action: receive_message | result: fail |result: no_data")
                 return None
-            
+
             if len(header) < MessageHeaderSize:
-                raise ValueError("Incomplete header received")
+                logging.warning("action: receive_message | result: fail|result: incomplete_header")
+                return None
 
             return self._handle_message(header, client_sock)
         except Exception as e:
@@ -166,10 +167,11 @@ class Server:
         Handles the client connection, delegating reading and processing.
         """
         try:
-            while self._running:  
-                if self._handle_incoming_messages(client_sock) == False:
+            while self._running:
+                result = self._handle_incoming_messages(client_sock)
+                if result is None:  # No valid message received, break the loop
+                    logging.info("action: handle_client | result: no_message | closing_connection")
                     break
-
         except Exception as e:
             logging.error(f"action: handle_client | result: fail | error: {e}")
         finally:

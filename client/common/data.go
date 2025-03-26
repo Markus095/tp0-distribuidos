@@ -17,31 +17,36 @@ type Bet struct {
 }
 
 func ReadDataset(clientID string) ([]Bet, error) {
-	var datasetPath = fmt.Sprintf("data/agency-%s.csv", clientID)
-	file, err := os.Open(datasetPath)
-	if err != nil {
-		log.Errorf("action: open_dataset | result: fail | error: %v", err)
-		return nil, err
-	}
-	defer file.Close()
+    var datasetPath = fmt.Sprintf("data/agency-%s.csv", clientID)
+    file, err := os.Open(datasetPath)
+    if err != nil {
+        log.Errorf("action: open_dataset | result: fail | error: %v", err)
+        return nil, err
+    }
+    defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	var bets []Bet
+    scanner := bufio.NewScanner(file)
+    var bets []Bet
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		bet, err := processLine(line)
-		if err == nil {
-			bets = append(bets, bet)
-		}
-	}
+    for scanner.Scan() {
+        line := scanner.Text()
+        bet, err := processLine(line)
+        if err == nil {
+            bets = append(bets, bet)
+        }
+    }
 
-	if err := scanner.Err(); err != nil {
-		log.Errorf("action: read_dataset | result: fail | error: %v", err)
-		return nil, err
-	}
+    if err := scanner.Err(); err != nil {
+        log.Errorf("action: read_dataset | result: fail | error: %v", err)
+        return nil, err
+    }
 
-	return bets, nil
+    if len(bets) == 0 {
+        log.Errorf("action: read_dataset | result: fail | error: no bets found")
+        return nil, fmt.Errorf("no bets found in dataset")
+    }
+
+    return bets, nil
 }
 
 func processLine(line string) (Bet, error) {

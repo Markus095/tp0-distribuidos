@@ -77,73 +77,87 @@ func (c *Client) StartClientLoop() {
 }
 
 func (c *Client) sendAndReceiveMessage(msgID int) {
-	bets, err := ReadDataset(c.config.ID)
-	if err != nil {
-		log.Errorf("action: read_dataset | result: fail | error: %v", err)
-		return
-	}
-	agencyID, err := strconv.ParseUint(c.config.ID, 10, 32)
-	if err != nil {
-		log.Errorf("action: parse_agency_id | result: fail | error: %v", err)
-		return
-	}
-	for i := 0; i < len(bets); i += int(c.config.BetsPerBatch) {
-		end := i + int(c.config.BetsPerBatch)
-		if end > len(bets) {
-			end = len(bets)
-		}
-		batch := bets[i:end]
-		message := EncodeBets(uint32(agencyID), batch)
-		if err := c.net.SendMessage(message); err != nil {
-			return
-		}
-		_, err = c.net.ReceiveAck()
-		if err != nil {
-			return
-		}
-		log.Infof("action: batch_sent | result: success | batch_size: %d", len(batch))
-	}
-	
-	if err := c.net.SendMessage(message); err != nil {
-		return
-	}
-	_, err = c.net.ReceiveAck()
-	if err != nil {
-		return
-	}
-	log.Infof("action: batch_sent | result: success | batch_size: %d", len(batch))
+    bets, err := ReadDataset(c.config.ID)
+    if err != nil {
+        log.Errorf("action: read_dataset | result: fail | error: %v", err)
+        return
+    }
+    agencyID, err := strconv.ParseUint(c.config.ID, 10, 32)
+    if err != nil {
+        log.Errorf("action: parse_agency_id | result: fail | error: %v", err)
+        return
+    }
+    for i := 0; i < len(bets); i += int(c.config.BetsPerBatch) {
+        end := i + int(c.config.BetsPerBatch)
+        if end > len(bets) {
+            end = len(bets)
+        }
+        batch := bets[i:end]
+        message := EncodeBets(uint32(agencyID), batch)
+        if err := c.net.SendMessage(message); err != nil {
+            return
+        }
+        _, err = c.net.ReceiveAck()
+        if err != nil {
+            return
+        }
+        log.Infof("action: batch_sent | result: success | batch_size: %d", len(batch))
+    }
 
-	// Notify the server that all bets have been sent
-	notification := EncodeNotification(uint32(agencyID))
-	if err := c.net.SendMessage(notification); err != nil {
-		log.Errorf("action: notify_server | result: fail | error: %v", err)
-		return
-	}
-	_, err = c.net.ReceiveAck()
-	if err != nil {
-		return
-	}
-	log.Infof("action: notify_server | result: success | client_id: %v", c.config.ID)
+    // Notify the server that all bets have been sent
+    notification := EncodeNotification(uint32(agencyID))
+    if err := c.net.SendMessage(notification); err != nil {
+        log.Errorf("action: notify_server | result: fail | error: %v", err)
+        return
+    }
+    _, err = c.net.ReceiveAck()
+    if err != nil {
+        return
+    }
+    log.Infof("action: notify_server | result: success | client_id: %v", c.config.ID)
 
-	winnersMessage := EncodeWinnersRequest(uint32(agencyID))
+    // Request winners
+    winnersMessage := EncodeWinnersRequest(uint32(agencyID))
     backoff := 1 * time.Second // Initial backoff duration
     maxBackoff := 32 * time.Second
-    for {
+    maxRetries := 5
+    retries := 0
+
+    for retries < maxRetries {
         if err := c.net.SendMessage(winnersMessage); err != nil {
             log.Errorf("action: request_winners | result: fail | error: %v", err)
             return
         }
 
-        _, winners, err := c.net.ReceiveWinners()
+        received, winners, err := c.net.ReceiveWinners()
         if err != nil {
-            log.Errorf("action: receive_winners | result: fail | error: %v", err)
-            return
+            log.Errorf("action: consulta_ganadores | result: fail | error: %v", err)
+            return // Terminate execution on error
         }
 
+        if !received || len(winners) == 0 {
+            // Empty winners message, increase backoff and retry
+            log.Infof("action: consulta_ganadores | result: fail | retrying: %d/%d", retries+1, maxRetries)
+            retries++
+            time.Sleep(backoff)
+            backoff *= 2
+            if backoff > maxBackoff {
+                backoff = maxBackoff
+            }
+            continue
+        }
 
         // Parse and log the winners
-        winnersList := DecodeWinners(winners) // Assuming DecodeWinners parses the response
+        winnersList, err := DecodeWinners(winners)
+        if err != nil {
+            log.Errorf("action: decode_winners | result: fail | error: %v", err)
+            return
+        }
         log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", len(winnersList))
         break
+    }
+
+    if retries == maxRetries {
+        log.Errorf("action: consulta_ganadores | result: fail | error: max_retries_exceeded")
     }
 }
