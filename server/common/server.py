@@ -31,9 +31,10 @@ class Server:
                 logging.error(f"action: close_server_socket | result: fail | error: {e}")
         logging.info("action: shutdown_server | result: success")
 
-    def __handle_client_connection(self, client_sock):
+    def _read_client_data(self, client_sock):
         """
-        Handle incoming bet registration from clients
+        Reads data from the client socket.
+        Returns: (agency_id, num_bets, bets_data) or raises an exception.
         """
         try:
             # Read the header (6 bytes)
@@ -41,7 +42,6 @@ class Server:
             if len(header) < MessageHeaderSize:
                 raise ValueError("Incomplete header received")
 
-            # Extract agency ID (4 bytes) and number of bets (2 bytes)
             agency_id = int.from_bytes(header[0:4], byteorder='big')
             num_bets = int.from_bytes(header[4:6], byteorder='big')
 
@@ -57,17 +57,42 @@ class Server:
                     raise ValueError("Connection closed before full message was received")
                 msg += chunk
 
-            # Decode and store bets
-            bets = self.decode_bets(agency_id, num_bets, msg)
-            store_bets(bets)
-
-            logging.info(f"action: apuesta_recibida | result: success | cantidad: {num_bets}")
-
-            # Send acknowledgment
-            client_sock.sendall(b"OK")
+            return agency_id, num_bets, msg
 
         except Exception as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
+            return None
+
+
+    def _process_client_data(self, agency_id, num_bets, bets_data):
+        """
+        Decodes and processes the bet data.
+        """
+        try:
+            bets = self.decode_bets(agency_id, num_bets, bets_data)
+            store_bets(bets)
+
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {num_bets}")
+            return True
+        except Exception as e:
+            logging.error(f"action: process_bets | result: fail | error: {e}")
+            logging.error(f"action: apuesta_recibida | result: fail | cantidad: ${num_bets}")
+            return False
+
+
+    def __handle_client_connection(self, client_sock):
+        """
+        Handles the client connection, delegating reading and processing.
+        """
+        try:
+            result = self._read_client_data(client_sock)
+            if result:
+                agency_id, num_bets, bets_data = result
+                success = self._process_client_data(agency_id, num_bets, bets_data)
+
+                # Send acknowledgment
+                client_sock.sendall(b"OK" if success else b"ERROR")
+
         finally:
             client_sock.close()
 
