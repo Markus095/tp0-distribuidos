@@ -39,6 +39,11 @@ class Server:
         try:
             # Read the header (6 bytes)
             header = client_sock.recv(MessageHeaderSize)
+
+            if not header:
+                logging.info("action: receive_message | result: client_disconnected")
+                return None
+            
             if len(header) < MessageHeaderSize:
                 raise ValueError("Incomplete header received")
 
@@ -88,7 +93,7 @@ class Server:
             while self._running:  # 🔄 Loop to handle multiple messages per client connection
                 result = self._read_client_data(client_sock)
                 if not result:
-                    break  # 🚨 Exit loop if client disconnects or error occurs
+                    break
 
                 agency_id, num_bets, bets_data = result
                 success = self._process_client_data(agency_id, num_bets, bets_data)
