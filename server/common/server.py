@@ -41,7 +41,6 @@ class Server:
             header = client_sock.recv(MessageHeaderSize)
 
             if not header:
-                logging.info("action: receive_message | result: client_disconnected")
                 return None
             
             if len(header) < MessageHeaderSize:
