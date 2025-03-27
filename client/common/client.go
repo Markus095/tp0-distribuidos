@@ -135,7 +135,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
             return // Terminate execution on error
         }
 
-        if !received || len(winners) == 0 {
+        if !received || winners == nil {
             // Empty winners message, increase backoff and retry
             log.Infof("action: consulta_ganadores | result: fail | retrying: %d/%d", retries+1, maxRetries)
             retries++
