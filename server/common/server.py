@@ -5,7 +5,7 @@ from common.utils import Bet, store_bets
 
 # Fix header and bet sizes
 MessageHeaderSize = 6  # 4 bytes agencyNumber + 2 bytes num_bets
-BetSize = 170  # 64 + 64 + 32 + 8 + 2 (matches client)
+BetSize = 146  # 64 + 64 + 8 + 8 + 2 (matches client)
 
 STORAGE_FILEPATH = "./bets.csv"
 
@@ -115,9 +115,9 @@ class Server:
             last_name = message[offset:offset+64].split(b'\0', 1)[0].decode('utf-8').strip()
             offset += 64
 
-            # Read Document (32 bytes)
-            document = message[offset:offset+32].split(b'\0', 1)[0].decode('utf-8').strip()
-            offset += 32
+            # Read Document (8 bytes)
+            document = message[offset:offset+8].split(b'\0', 1)[0].decode('utf-8').strip()
+            offset += 8
 
             # Read birthdate (8 bytes) and convert to YYYY-MM-DD format
             date_str = message[offset:offset+8].decode('utf-8')

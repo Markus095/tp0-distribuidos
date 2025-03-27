@@ -18,3 +18,20 @@ Se deberá implementar un módulo de comunicación entre el cliente y el servido
 * Correcto empleo de sockets, incluyendo manejo de errores y evitando los fenómenos conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
 
 ### Ejercicio N°5 explicación de solución:
+Se creó un protocolo para la comunicación entre el cliente y el servidor.
+Este consiste en el envío de mensajes encodeados a bytes a través del socket TCP. Los mensajes provenientes del cliente tienen la siguiente estructura:
+## Header
+Tiene un tamaño fijo de 6 bytes, contiene:
+-Número de agencia (4 bytes) representado como un entero de 32 bits en formato big-endian.
+-Número de apuestas (2 bytes) representado como un entero sin signo de 16 bits en formato big-endian.
+
+## Body
+Este contiene la información de las apuestas. Cada apuesta tiene un tamaño fijo de 146 bytes. 
+# Campos de la apuesta:
+-Nombre ( 64 bytes) se trata de un string que se rellena con espacios cuando es mas corto.
+-Apellido ( 64 bytes) al igual que el nombre, un string que se rellena con espacios cuando es mas corto.
+-Documento ( 8 bytes), rellenado con espacios cuando es más corto.
+-Fecha de Nacimiento (8 bytes), en formato ISO, YYYYMMDD
+-Número apostado (2 bytes), entero sin signo de 16 bits.
+
+Por lo tanto el tamaño total de un mensaje es Header(6 bytes) + Tamaño de una apuesta

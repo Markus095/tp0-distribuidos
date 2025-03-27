@@ -9,7 +9,7 @@ const (
 	MessageHeaderSize  = 6 
 	MaxFirstNameLength = 64
 	MaxLastNameLength  = 64
-	MaxDocumentLength  = 32
+	MaxDocumentLength  = 8
 	MaxDateLength      = 8
 	MaxBetCodeLength   = 2
 	BetSize            = MaxFirstNameLength + MaxLastNameLength + MaxDocumentLength + MaxDateLength + MaxBetCodeLength
@@ -39,8 +39,8 @@ func EncodeBets(agencyNumber uint32, bets []Bet) []byte {
 		copy(message[offset:offset+MaxLastNameLength], []byte(fmt.Sprintf("%-64s", bet.LastName)))
 		offset += MaxLastNameLength
 		
-		copy(message[offset:offset+MaxDocumentLength], []byte(fmt.Sprintf("%-32s", bet.Document)))
-		offset += MaxDocumentLength
+		copy(message[offset:offset+MaxDocumentLength], []byte(fmt.Sprintf("%-8s", bet.Document)))
+        offset += MaxDocumentLength
 		
 		birthdate := bet.Birthdate[:4] + bet.Birthdate[5:7] + bet.Birthdate[8:]
 		copy(message[offset:offset+MaxDateLength], []byte(fmt.Sprintf("%-8s", birthdate)))
