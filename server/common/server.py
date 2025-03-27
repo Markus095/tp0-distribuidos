@@ -2,6 +2,7 @@ import socket
 import logging
 import signal
 import os
+from multiprocessing import Process, Manager  # Import multiprocessing
 from common.bet_processing import process_bets, obtain_winners_documents
 
 # Fix header and bet sizes
@@ -25,8 +26,12 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self._running = True
-        self._notified_agencies = set()
-        self.winners = {}
+
+        # Use a Manager to create shared state
+        manager = Manager()
+        self._notified_agencies = manager.list()  # Shared list for notified agencies
+        self.winners = manager.dict()  # Shared dictionary for winners
+
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
     def __handle_sigterm(self, signum, frame):
@@ -127,10 +132,14 @@ class Server:
         Notifies the agency that the bets have been processed.
         """
         try:
-            self._notified_agencies.add(agency_id)
-            logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id} agencias_notificadas: {len(self._notified_agencies)}")
+            if agency_id not in self._notified_agencies:
+                self._notified_agencies.append(agency_id)  # Add to shared list
+                logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id} agencias_notificadas: {len(self._notified_agencies)}")
+            
+            # Check if all clients have notified
             if len(self._notified_agencies) == NUMBER_OF_CLIENTS:
                 self.realizar_sorteo()
+
             self._send_ack(client_sock)
             return True
         except Exception as e:
@@ -146,6 +155,8 @@ class Server:
             if not winners:
                 logging.warning("action: obtener_ganadores | result: no_winners_found")
                 return False
+
+            # Populate the shared winners dictionary
             for agency_id in self._notified_agencies:
                 self.winners[agency_id] = [
                     int(document) for agency, document in winners if agency == agency_id and document.isdigit()
@@ -154,7 +165,7 @@ class Server:
             return True
         except Exception as e:
             logging.error(f"action: sorteo_realizado | result: fail | error: {e}")
-            return False    
+            return False
 
     def _handle_winners_request_message(self, agency_id, client_sock):
         """
@@ -178,6 +189,7 @@ class Server:
     def __handle_client_connection(self, client_sock):
         """
         Handles the client connection, delegating reading and processing.
+        This method will run in a separate process.
         """
         try:
             while self._running:
@@ -195,12 +207,18 @@ class Server:
             client_sock.close()
 
     def __accept_new_connection(self):
+        """
+        Accepts a new client connection.
+        """
         logging.info('action: accept_connections | result: in_progress')
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
 
     def run(self):
+        """
+        Main server loop to accept and handle client connections in parallel.
+        """
         logging.info("action: server_start | result: in_progress")
         try:
             while self._running:
@@ -208,7 +226,10 @@ class Server:
                     self._server_socket.settimeout(10.0)
                     client_sock = self.__accept_new_connection()
                     if client_sock:
-                        self.__handle_client_connection(client_sock)
+                        # Spawn a new process for each client connection
+                        process = Process(target=self.__handle_client_connection, args=(client_sock,))
+                        process.start()
+                        logging.info(f"action: spawn_process | result: success | pid: {process.pid}")
                 except Exception as e:
                     if self._running:
                         logging.error(f"action: server_loop | result: error | error: {e}")
