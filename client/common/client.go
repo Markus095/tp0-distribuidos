@@ -63,13 +63,12 @@ func (c *Client) StartClientLoop() {
         log.Errorf("action: create_client_socket | result: fail | error: %v", err)
         return
     }
-    defer c.net.CloseConnection() // Ensure the connection is closed after the process finishes
+    defer c.net.CloseConnection()
 
-    // Send all bets and finish the process
     c.wg.Add(1)
     go func() {
         defer c.wg.Done()
-        c.sendAndReceiveMessage(1) // Send all bets in one go
+        c.sendAndReceiveMessage(1)
     }()
 
     c.wg.Wait()
@@ -88,7 +87,6 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         return
     }
 
-    // Send bets in batches
     for i := 0; i < len(bets); i += int(c.config.BetsPerBatch) {
         end := i + int(c.config.BetsPerBatch)
         if end > len(bets) {
@@ -101,7 +99,6 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
             return
         }
 
-        // Wait for ACK from the server
         _, err = c.net.ReceiveACK()
         if err != nil {
             log.Errorf("action: receive_ack | result: fail | error: %v", err)
@@ -110,14 +107,12 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         log.Infof("action: batch_sent | result: success | batch_size: %d", len(batch))
     }
 
-    // Notify the server that all bets have been sent
     notification := EncodeNotification(uint32(agencyID))
     if err := c.net.SendMessage(notification); err != nil {
         log.Errorf("action: notify_server | result: fail | error: %v", err)
         return
     }
 
-    // Wait for ACK for the notification
     _, err = c.net.ReceiveACK()
     if err != nil {
         log.Errorf("action: receive_notification_ack | result: fail | error: %v", err)
@@ -125,14 +120,14 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
     }
     log.Infof("action: notify_server | result: success | client_id: %v", c.config.ID)
 
-    // Request winners in a loop with reconnection
+
     winnersMessage := EncodeWinnersRequest(uint32(agencyID))
-    backoff := 1 * time.Second // Initial backoff duration
+    backoff := 1 * time.Second 
     maxBackoff := 32 * time.Second
     retries := 0
 
     for {
-        if retries >= 5 { // Maximum retries
+        if retries >= 5 {
             log.Errorf("action: consulta_ganadores | result: fail | error: max_retries_exceeded")
             break
         }
@@ -149,7 +144,6 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         }
 
         if !received || winners == nil {
-            // Empty winners message, disconnect, sleep, and retry
             log.Infof("action: intento_consulta_ganadores | result: success | retrying: %d", retries+1)
             retries++
             c.net.CloseConnection()
@@ -159,7 +153,6 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
                 backoff = maxBackoff
             }
 
-            // Reconnect to the server
             if err := c.net.CreateClientSocket(c.config.ServerAddress); err != nil {
                 log.Errorf("action: reconnect | result: fail | error: %v", err)
                 return
@@ -167,7 +160,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
             continue
         }
 
-        // Parse and log the winners
+
         winnersList, err := DecodeWinners(winners)
         if err != nil {
             log.Errorf("action: decode_winners | result: fail | error: %v", err)
@@ -177,6 +170,5 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         break
     }
 
-    // Add a small delay before closing the connection
     
 }
