@@ -5,9 +5,8 @@ import os
 from multiprocessing import Process, Manager, Lock
 from common.bet_processing import process_bets, obtain_winners_documents
 
-# Fix header and bet sizes
-MESSAGE_HEADER_SIZE = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
-BET_SIZE = 146  # 64 + 64 + 8 + 8 + 2 (matches client)
+MESSAGE_HEADER_SIZE = 8
+BET_SIZE = 146
 BET_MESSAGE_TYPE = 1
 NOTIFICATION_MESSAGE_TYPE = 2
 REQUEST_WINNERS_MESSAGE_TYPE = 3

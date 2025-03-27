@@ -103,14 +103,10 @@ func DecodeAnswerType(answer []byte) (uint16, []byte, error) {
 		log.Errorf("action: decode_answer_type | result: fail | error: invalid message size, message size: %d", len(answer))
 		return 0, nil, fmt.Errorf("invalid message size: expected at least %d bytes, got %d", AnswerHeaderSize, len(answer))
 	}
-
-	// Extract the answer type (2 bytes)
 	answerType := binary.BigEndian.Uint16(answer[0:2])
 
-	// Extract the payload length (2 bytes)
 	payloadLength := binary.BigEndian.Uint16(answer[2:4])
-
-	// Read the remaining payload if present
+	
 	payload := make([]byte, payloadLength)
 	return answerType, payload, nil
 }

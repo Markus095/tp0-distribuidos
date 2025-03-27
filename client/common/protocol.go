@@ -60,7 +60,7 @@ func EncodeNotification(agencyNumber uint32) []byte {
     message := make([]byte, MessageHeaderSize)
     binary.BigEndian.PutUint32(message[0:4], agencyNumber)
     binary.BigEndian.PutUint16(message[4:6], NotificationMessage)
-    binary.BigEndian.PutUint16(message[6:8], 0) // No batch size for notifications
+    binary.BigEndian.PutUint16(message[6:8], 0)
     return message
 }
 
@@ -68,7 +68,7 @@ func EncodeWinnersRequest(agencyNumber uint32) []byte {
     message := make([]byte, MessageHeaderSize)
     binary.BigEndian.PutUint32(message[0:4], agencyNumber)
     binary.BigEndian.PutUint16(message[4:6], WinnersRequestMessage)
-    binary.BigEndian.PutUint16(message[6:8], 0) // No batch size for winners request
+    binary.BigEndian.PutUint16(message[6:8], 0)
     return message
 }
 
