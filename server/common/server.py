@@ -1,6 +1,7 @@
 import socket
 import logging
 import signal
+import os
 from common.bet_processing import process_bets, obtain_winners_documents
 
 # Fix header and bet sizes
@@ -9,6 +10,8 @@ BetSize = 170  # 64 + 64 + 32 + 8 + 2 (matches client)
 betMessageType = 1
 notificationMessageType = 2
 requestWinnerMessageType = 3
+
+NUMBER_OF_CLIENTS = os.getenv("NUMBER_OF_CLIENTS", 1)
 
 STORAGE_FILEPATH = "./bets.csv"
 ACK_ANSWER = 1
@@ -126,7 +129,7 @@ class Server:
         try:
             self._notified_agencies.add(agency_id)
             logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id} agencias_notificadas: {len(self._notified_agencies)}")
-            if len(self._notified_agencies) == 5:
+            if len(self._notified_agencies) == NUMBER_OF_CLIENTS:
                 self.realizar_sorteo()
             self._send_ack(client_sock)
             return True

@@ -19,7 +19,7 @@ def main(argc=len(sys.argv), argv=sys.argv):
         print(f"An error occurred: {e}")
 
 
-def add_server_to_yaml(filename):
+def add_server_to_yaml(filename,number_of_clients):
     try:
         with open(filename, 'a') as file:
             file.write("name: tp0\n")
@@ -32,6 +32,7 @@ def add_server_to_yaml(filename):
             file.write("      - ./server/config.ini:/config.ini\n")
             file.write("    environment:\n")
             file.write("      - PYTHONUNBUFFERED=1\n")
+            file.write(f"      - NUMBER_OF_CLIENTS={number_of_clients} \n")
             file.write("    networks:\n")
             file.write("      - testing_net\n\n")
     except Exception as e:
