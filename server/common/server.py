@@ -237,6 +237,8 @@ class Server:
                         process.start()
                         self._processes.append(process)
                         logging.info(f"action: spawn_process | result: success | pid: {process.pid}")
+                except socket.timeout:
+                    logging.debug("action: server_loop | result: timeout | info: no_connections")
                 except Exception as e:
                     if self._running:
                         logging.error(f"action: server_loop | result: error | error: {e}")
