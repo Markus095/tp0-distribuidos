@@ -7,24 +7,23 @@ services:
     volumes:
       - ./server/config.ini:/config.ini
     environment:
-      - PYTHONPATH=/server
       - PYTHONUNBUFFERED=1
     networks:
       - testing_net
 
   client1:
-    container_name: agencia1
+    container_name: client1
     image: client:latest
     entrypoint: /client
     volumes:
       - ./client/config.yaml:/config.yaml
     environment:
       - CLI_ID=1
-      - CLI_BET_FIRSTNAME='Santiago Lionel'
-      - CLI_BET_LASTNAME='Lorca'
-      - CLI_BET_DOCUMENT=30904465
-      - CLI_BET_BIRTHDATE=1999-03-17
-      - CLI_BET_NUMBER=7574
+      - CLI_BET_FIRSTNAME=Client1
+      - CLI_BET_LASTNAME=Lastname1
+      - CLI_BET_DOCUMENT=10000001
+      - CLI_BET_BIRTHDATE=1990-01-01
+      - CLI_BET_NUMBER=7001
     networks:
       - testing_net
     depends_on:
