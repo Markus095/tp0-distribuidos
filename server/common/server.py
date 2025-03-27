@@ -143,7 +143,6 @@ class Server:
                 self._notified_agencies.append(agency_id)  # Add to shared list
                 logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id} agencias_notificadas: {len(self._notified_agencies)}")
             
-            # Check if all clients have notified
             if len(self._notified_agencies) == NUMBER_OF_CLIENTS:
                 self.realizar_sorteo()
 
@@ -163,7 +162,6 @@ class Server:
                 logging.warning("action: obtener_ganadores | result: no_winners_found")
                 return False
 
-            # Populate the shared winners dictionary
             for agency_id in self._notified_agencies:
                 self.winners[agency_id] = [
                     int(document) for agency, document in winners if agency == agency_id and document.isdigit()
