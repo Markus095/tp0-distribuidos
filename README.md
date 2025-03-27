@@ -11,22 +11,10 @@ La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable des
 
 Por su parte, el servidor deberá responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 
-### Ejercicio N°7:
+### Ejercicio N°6 explicación de Solución:
+El protocolo ya estaba planteado con la idea de manejar varias apuestas en un solo mensaje, así que no fue necesario modificarlo.
+Se modificó al cliente para poder levantar los archivos del csv en el docker volume y enviar las apuestas en varios mensajes al servidor. Cada mensaje puede tener hasta "batch: maxAmount" apuestas, pero (generalmente el último) pueden tener menos y eso no genera ningún problema. También se lo separó en varios archivos para facilitar la lectura y poder mantener la separación de responsabilidades.
+El servidor se modificó para esperar varios mensajes de un mismo cliente y para poder procesar y guardar las varias apuestas
 
-Modificar los clientes para que notifiquen al servidor al finalizar con el envío de todas las apuestas y así proceder con el sorteo.
-Inmediatamente después de la notificacion, los clientes consultarán la lista de ganadores del sorteo correspondientes a su agencia.
-Una vez el cliente obtenga los resultados, deberá imprimir por log: `action: consulta_ganadores | result: success | cant_ganadores: ${CANT}`.
-
-El servidor deberá esperar la notificación de las 5 agencias para considerar que se realizó el sorteo e imprimir por log: `action: sorteo | result: success`.
-Luego de este evento, podrá verificar cada apuesta con las funciones `load_bets(...)` y `has_won(...)` y retornar los DNI de los ganadores de la agencia en cuestión. Antes del sorteo no se podrán responder consultas por la lista de ganadores con información parcial.
-
-Las funciones `load_bets(...)` y `has_won(...)` son provistas por la cátedra y no podrán ser modificadas por el alumno.
-
-No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que se informen los DNIs ganadores que correspondan a cada una de ellas.
-
-## Parte 3: Repaso de Concurrencia
-En este ejercicio es importante considerar los mecanismos de sincronización a utilizar para el correcto funcionamiento de la persistencia.
-
-### Ejercicio N°8:
-
-Modificar el servidor para que permita aceptar conexiones y procesar mensajes en paralelo. En caso de que el alumno implemente el servidor en Python utilizando _multithreading_,  deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
+### Dificultades
+-Inicialmente moví los directorios a una carpeta "/datasets" y funcionaba bien, pero como las pruebas no lo encontraban tuve que modificar toda la lógica de la creacion de los volumenes y en lugar de pasarle un archivo ahora los clientes reciben el directorio.
