@@ -13,6 +13,7 @@ requestWinnerMessageType = 3
 STORAGE_FILEPATH = "./bets.csv"
 ACK_ANSWER = 1
 WINNERS_ANSWER = 2
+NO_WINNERS_ANSWER = 3
 ANSWER_HEADER_SIZE = 4 
 
 class Server:
@@ -46,10 +47,24 @@ class Server:
         except Exception as e:
             logging.error(f"action: send_ack | result: fail | error: {e}")
 
+    def _send_winners(self, client_sock, winners_list):
+        try:
+            payload = b"".join(winner.to_bytes(4, byteorder='big') for winner in winners_list)
+            response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + len(payload).to_bytes(2, byteorder='big') + payload
+            client_sock.sendall(response)
+        except Exception as e:
+            logging.error(f"action: send_winners | result: fail | error: {e}")
+    
+    def _send_no_winners(self, client_sock):
+        try:
+            response = NO_WINNERS_ANSWER.to_bytes(2, byteorder='big') + (0).to_bytes(2, byteorder='big')
+            client_sock.sendall(response)
+        except Exception as e:
+            logging.error(f"action: send_no_winners | result: fail | error: {e}")
+
     def _handle_incoming_messages(self, client_sock):
         """
         Reads data from the client socket.
-        Returns: (agency_id, num_bets, bets_data) or raises an exception.
         """
         try:
             header = client_sock.recv(MessageHeaderSize)
@@ -141,14 +156,6 @@ class Server:
         except Exception as e:
             logging.error(f"action: sorteo_realizado | result: fail | error: {e}")
             return False    
-        
-    def _send_winners(self, client_sock, winners_list):
-        try:
-            payload = b"".join(winner.to_bytes(4, byteorder='big') for winner in winners_list)
-            response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + len(payload).to_bytes(2, byteorder='big') + payload
-            client_sock.sendall(response)
-        except Exception as e:
-            logging.error(f"action: send_winners | result: fail | error: {e}")
 
     def _handle_winners_request_message(self, agency_id, client_sock):
         """
@@ -160,13 +167,16 @@ class Server:
                 self._send_winners(client_sock, winners_list)
                 logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id} | cantidad: {len(winners_list)}")
             else:
-                # Send an empty winners response
-                self._send_winners(client_sock, [])
+                self._send_no_winners(client_sock)
                 logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id} no hay ganadores aun")
-            return True
         except Exception as e:
             logging.error(f"action: solicitud_ganadores | result: fail | error: {e}")
             return False
+        finally:
+            # Close the connection after responding
+            client_sock.close()
+            logging.info(f"action: solicitud_ganadores | result: connection_closed | agencia: {agency_id}")
+        
 
     def __handle_client_connection(self, client_sock):
         """
@@ -174,9 +184,13 @@ class Server:
         """
         try:
             while self._running:
-                result = self._handle_incoming_messages(client_sock)
-                if result is None:  # No valid message received, break the loop
-                    logging.info("action: handle_client | result: no_message | closing_connection")
+                try:
+                    result = self._handle_incoming_messages(client_sock)
+                    if result is None:  # No valid message received, break the loop
+                        logging.info("action: handle_client | result: success | closing_connection")
+                        break
+                except ConnectionResetError:
+                    logging.info("action: handle_client | result: success | reason: connection_reset")
                     break
         except Exception as e:
             logging.error(f"action: handle_client | result: fail | error: {e}")
@@ -194,12 +208,10 @@ class Server:
         try:
             while self._running:
                 try:
-                    self._server_socket.settimeout(1.0)
+                    self._server_socket.settimeout(10.0)
                     client_sock = self.__accept_new_connection()
                     if client_sock:
                         self.__handle_client_connection(client_sock)
-                except socket.timeout:
-                    continue
                 except Exception as e:
                     if self._running:
                         logging.error(f"action: server_loop | result: error | error: {e}")

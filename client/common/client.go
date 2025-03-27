@@ -102,7 +102,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         }
 
         // Wait for ACK from the server
-        _, err = c.net.ReceiveAck()
+        _, err = c.net.ReceiveACK()
         if err != nil {
             log.Errorf("action: receive_ack | result: fail | error: %v", err)
             return
@@ -118,7 +118,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
     }
 
     // Wait for ACK for the notification
-    _, err = c.net.ReceiveAck()
+    _, err = c.net.ReceiveACK()
     if err != nil {
         log.Errorf("action: receive_notification_ack | result: fail | error: %v", err)
         return
@@ -149,7 +149,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
             return
         }
 
-        if !received || winners == nil {
+        if !received || (winners == nil && retries < 5) {
             // Empty winners message, disconnect, sleep, and retry
             log.Infof("action: consulta_ganadores | result: fail | retrying: %d", retries+1)
             retries++

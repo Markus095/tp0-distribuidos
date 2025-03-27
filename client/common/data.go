@@ -72,8 +72,9 @@ func processLine(line string) (Bet, error) {
 }
 
 func DecodeWinners(winnerBytes []byte) ([]uint32, error) {
+
     if len(winnerBytes)%4 != 0 {
-        log.Infof("action: decode_winners | result: success | info: no winners in payload")
+        log.Infof("action: decode_winners | result: success | info: no winners in payload payload: %v", winnerBytes)
         return []uint32{}, nil
     }
 

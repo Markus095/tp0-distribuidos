@@ -77,7 +77,9 @@ const (
 	AnswerTypeSize       = 2
 	AmountOfWinnersSize  = 2
 	ACKAnswer            = 1
-	WinnersAnswer        = 2
+	NoWinnersAnswer      = 2
+	WinnersAnswer 	     = 3
+
 )
 
 func DecodeAnswerType(answer []byte) (uint16, []byte, error) {
