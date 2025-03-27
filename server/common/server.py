@@ -12,9 +12,6 @@ DOCUMENT_SIZE = 8
 BIRTHDATE_SIZE = 8
 CHOSEN_NUMBER_SIZE = 2
 
-
-STORAGE_FILEPATH = "./bets.csv"
-
 class Server:
     def __init__(self, port, listen_backlog):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

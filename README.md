@@ -35,3 +35,6 @@ Este contiene la información de las apuestas. Cada apuesta tiene un tamaño fij
 -Número apostado (2 bytes), entero sin signo de 16 bits.
 
 Por lo tanto el tamaño total de un mensaje es Header(6 bytes) + Tamaño de una apuesta
+
+El Cliente parsea este mensaje con las variables de la apuesta que se le pasan por parámetro.
+Cuando el Servidor lo recibe, almacena el ID del cliente y luego decodifica cada apuesta, usando el ID del header para el campo de la agencia. Finalmente almacena las apuestas y envía un mensaje de 2 bytes que dice ("OK) como ACK, al recibirlo el cliente termina.
