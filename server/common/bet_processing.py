@@ -4,7 +4,7 @@ import logging
 
 def process_bets(agency_id, num_bets, bets_data, lock):
     decoded_bets = decode_bets(agency_id, num_bets, bets_data)
-    with lock:  # Use the lock to ensure exclusive access
+    with lock:
         store_bets(decoded_bets)
     return True
 
