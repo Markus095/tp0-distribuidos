@@ -33,6 +33,7 @@ El script funciona de la siguiente manera:
 -Tardé un poco en entender que tenía que conectarme a través del puerto especificado en la configuración del servidor.
 -Tuve que aprender a usar variables y ifs en bash, que nunca me había hecho falta hasta ahora.
 
+
 ### Ejercicio N°4 explicación de la solución:
 Se le agregó al servidor un nuevo parámetro: running, el cual es revisado en lugar del while true original. Se inicializa con un valor positivo, pero cambia cuando recibe el sigterm. Cuando eso sucede, se corta el loop y trata de cerrar todos los sockets y luego finaliza. 
 Por otro lado, se le agregó un waitgroup al cliente para revisar que las conexiones se cierran antes de terminar el programa y un campo "done" que se usa para avisarle a todas las rutinas cuando se solicita el cierre del cliente. También se le añadió un signal handler que funciona en una rutina separada para manejar la secuencia de cerrado y la secuencia de cierre, que cierra todas las conexiones.
@@ -45,6 +46,7 @@ Durante bastante tiempo le pasaba una cantidad erronea de parametros al handler 
 ### Ejercicio N°5 explicación de solución:
 Se creó un protocolo para la comunicación entre el cliente y el servidor.
 Este consiste en el envío de mensajes encodeados a bytes a través del socket TCP. Los mensajes provenientes del cliente tienen la siguiente estructura:
+
 ## Header
 Tiene un tamaño fijo de 6 bytes, contiene:
 -Número de agencia (4 bytes) representado como un entero de 32 bits en formato big-endian.
@@ -64,6 +66,7 @@ Por lo tanto el tamaño total de un mensaje es Header(6 bytes) + Tamaño de una 
 El Cliente parsea este mensaje con las variables de la apuesta que se le pasan por parámetro.
 Cuando el Servidor lo recibe, almacena el ID del cliente y luego decodifica cada apuesta, usando el ID del header para el campo de la agencia. Finalmente almacena las apuestas y envía un mensaje de 2 bytes que dice ("OK) como ACK, al recibirlo el cliente termina.
 
+
 ### Ejercicio N°6 explicación de Solución:
 El protocolo ya estaba planteado con la idea de manejar varias apuestas en un solo mensaje, así que no fue necesario modificarlo.
 Se modificó al cliente para poder levantar los archivos del csv en el docker volume y enviar las apuestas en varios mensajes al servidor. Cada mensaje puede tener hasta "batch: maxAmount" apuestas, pero (generalmente el último) pueden tener menos y eso no genera ningún problema. También se lo separó en varios archivos para facilitar la lectura y poder mantener la separación de responsabilidades.
@@ -71,6 +74,7 @@ El servidor se modificó para esperar varios mensajes de un mismo cliente y para
 
 ## Dificultades
 -Inicialmente moví los directorios a una carpeta "/datasets" y funcionaba bien, pero como las pruebas no lo encontraban tuve que modificar toda la lógica de la creacion de los volumenes y en lugar de pasarle un archivo ahora los clientes reciben el directorio.
+
 
 ### Ejercicio N°7 Explicación de Solución:
 El protocolo recibió varias modificaciones:
@@ -104,11 +108,13 @@ Para hacer el sorteo carga las apuestas que fueron guardadas a disco y posterior
 ## Dificultades
 -Inicialmente no había un protocolo para diferenciar el tipo de mensaje, se hacía en base al tamaño del payload. Esto resultó muy complicado de verificar con éxito e innecesariamente complicado, así que terminé decidiendo agregar un campo extra. 
 
-### Parte 3: Repaso de Concurrencia
-En este ejercicio es importante considerar los mecanismos de sincronización a utilizar para el correcto funcionamiento de la persistencia.
+### Ejercicio N°8 Explicación de Solución:
+Me decidí por una solución multiproceso debido a las limitaciones que tiene Python con multithreading.
+Se modificó al servidor de forma que cada vez que recibe un cliente por el socket donde escucha conexiones nuevas, crea un proceso para manejarlo. Estos procesos se manejan de forma independiente salvo por 3 recursos: 
 
-### Ejercicio N°8:
+-El archivo donde guardan las apuestas, el cual es solo accesible al obtener el lock. Evita que condiciones de carrera y la pérdida de datos al guardar las apuestas.
+-El set de agencias que ya notificaron el envío de todas sus apuestas. Es compartido y administrado por un Manager de la biblioteca multiprocessing, que asegura las sincronización de los procesos. Evita que los procesos solo sepan de la notificación de su cliente y que en consecuencia nunca lleguen al sorteo.
+-El diccionario de ganadores, también administrado por el Manager. Evita que todos los procesos realicen el sorteo por separado innecesariamente, ya que es una operación costosa si se manejan grandes cantidades de apuestas.
 
-Modificar el servidor para que permita aceptar conexiones y procesar mensajes en paralelo. En caso de que el alumno implemente el servidor en Python utilizando _multithreading_,  deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
-
+Cuando un cliente se desconecta, el proceso que lo manejaba también finaliza y realiza un `join` con el proceso principal. Si el proceso principal recibe una señal `SIGTERM` o finaliza por algún otro motivo, primero envía una señal a los procesos secundarios para que terminen y luego realiza un `join` con ellos, evitando así la creación de procesos huérfanos.
 
