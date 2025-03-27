@@ -70,11 +70,11 @@ class Server:
             header = client_sock.recv(MessageHeaderSize)
 
             if not header:  
-                logging.info("action: receive_message | result: fail |result: no_data")
+                logging.info("action: receive_message | result: fail | reason: no_data")
                 return None
 
             if len(header) < MessageHeaderSize:
-                logging.warning("action: receive_message | result: fail|result: incomplete_header")
+                logging.warning("action: receive_message | result: fail| reason: incomplete_header")
                 return None
 
             return self._handle_message(header, client_sock)
@@ -181,7 +181,7 @@ class Server:
                 try:
                     result = self._handle_incoming_messages(client_sock)
                     if result is None:  # No valid message received, break the loop
-                        logging.info("action: handle_client | result: success | closing_connection")
+                        logging.info("action: handle_client | result: success | info: closing_connection")
                         break
                 except ConnectionResetError:
                     logging.info("action: handle_client | result: success | reason: connection_reset")
