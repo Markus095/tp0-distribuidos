@@ -4,9 +4,9 @@ import signal
 import os
 from common.bet_processing import process_bets, obtain_winners_documents
 
-# Fix header and bet sizes
-MessageHeaderSize = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
-BetSize = 170  # 64 + 64 + 32 + 8 + 2 (matches client)
+
+MESSAGE_HEADER_SIZE = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
+BET_SIZE = 146  # 64 + 64 + 8 + 8 + 2 (matches client)
 betMessageType = 1
 notificationMessageType = 2
 requestWinnerMessageType = 3
@@ -70,13 +70,13 @@ class Server:
         Reads data from the client socket.
         """
         try:
-            header = client_sock.recv(MessageHeaderSize)
+            header = client_sock.recv(MESSAGE_HEADER_SIZE)
 
             if not header:  
                 logging.info("action: receive_message | result: fail | reason: no_data")
                 return None
 
-            if len(header) < MessageHeaderSize:
+            if len(header) < MESSAGE_HEADER_SIZE:
                 logging.warning("action: receive_message | result: fail| reason: incomplete_header")
                 return None
 
@@ -103,7 +103,7 @@ class Server:
         Decodes and processes the bet data.
         """
         try:
-            total_size = num_bets * BetSize
+            total_size = num_bets * BET_SIZE
             bets_data = b""
 
             while len(bets_data) < total_size:
