@@ -6,11 +6,11 @@ from multiprocessing import Process, Manager, Lock
 from common.bet_processing import process_bets, obtain_winners_documents
 
 # Fix header and bet sizes
-MessageHeaderSize = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
-BetSize = 170  # 64 + 64 + 32 + 8 + 2 (matches client)
-betMessageType = 1
-notificationMessageType = 2
-requestWinnerMessageType = 3
+MESSAGE_HEADER_SIZE = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
+BET_SIZE = 146  # 64 + 64 + 8 + 8 + 2 (matches client)
+BET_MESSAGE_TYPE = 1
+NOTIFICATION_MESSAGE_TYPE = 2
+REQUEST_WINNERS_MESSAGE_TYPE = 3
 
 NUMBER_OF_CLIENTS: int = int(os.getenv("NUMBER_OF_CLIENTS", 1))
 
@@ -82,13 +82,13 @@ class Server:
         Reads data from the client socket.
         """
         try:
-            header = client_sock.recv(MessageHeaderSize)
+            header = client_sock.recv(MESSAGE_HEADER_SIZE)
 
             if not header:  
                 logging.info("action: receive_message | result: fail | reason: no_data")
                 return None
 
-            if len(header) < MessageHeaderSize:
+            if len(header) < MESSAGE_HEADER_SIZE:
                 logging.warning("action: receive_message | result: fail| reason: incomplete_header")
                 return None
 
@@ -103,11 +103,11 @@ class Server:
         num_bets = int.from_bytes(header[6:8], byteorder='big')
         if( 1 > message_type > 3):
             raise ValueError("Invalid message type")
-        elif( message_type == betMessageType):
+        elif( message_type == BET_MESSAGE_TYPE):
             return self._handle_bets_message(agency_id, num_bets, client_sock)
-        elif( message_type == notificationMessageType):
+        elif( message_type == NOTIFICATION_MESSAGE_TYPE):
             return self._handle_notification_message(agency_id, client_sock)
-        elif( message_type == requestWinnerMessageType):
+        elif( message_type == REQUEST_WINNERS_MESSAGE_TYPE):
             return self._handle_winners_request_message(agency_id, client_sock)
 
     def _handle_bets_message(self, agency_id, num_bets, client_sock):
@@ -115,7 +115,7 @@ class Server:
         Decodes and processes the bet data.
         """
         try:
-            total_size = num_bets * BetSize
+            total_size = num_bets * BET_SIZE
             bets_data = b""
 
             while len(bets_data) < total_size:
