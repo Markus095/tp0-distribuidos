@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 import os
-from multiprocessing import Process, Manager  # Import multiprocessing
+from multiprocessing import Process, Manager, Lock
 from common.bet_processing import process_bets, obtain_winners_documents
 
 # Fix header and bet sizes
@@ -30,6 +30,7 @@ class Server:
         manager = Manager()
         self._notified_agencies = manager.list()
         self.winners = manager.dict()
+        self._lock = Lock()  
 
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
         self._processes = [] 
@@ -123,7 +124,7 @@ class Server:
                     raise ValueError("Connection closed before full message was received")
                 bets_data += chunk
             
-            process_bets(agency_id, num_bets, bets_data)
+            process_bets(agency_id, num_bets, bets_data, self._lock)
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {num_bets}")
             self._send_ack(client_sock)
             return True
@@ -234,7 +235,7 @@ class Server:
                     if client_sock:
                         process = Process(target=self.__handle_client_connection, args=(client_sock,))
                         process.start()
-                        self._processes.append(process)  # Track the process
+                        self._processes.append(process)
                         logging.info(f"action: spawn_process | result: success | pid: {process.pid}")
                 except Exception as e:
                     if self._running:
