@@ -4,6 +4,7 @@ from configparser import ConfigParser
 from common.server import Server
 import logging
 import os
+import sys
 
 
 def initialize_config():
@@ -49,7 +50,14 @@ def main():
 
     # Initialize server and start server loop
     server = Server(port, listen_backlog)
-    server.run()
+    try:
+        server.run()
+    except KeyboardInterrupt:
+        logging.info("action: keyboard_interrupt | result: shutting_down")
+    except Exception as e:
+        logging.error(f"action: main | result: error | error: {e}")
+    finally:
+        sys.exit(0)
 
 def initialize_log(logging_level):
     """
