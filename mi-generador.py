@@ -9,7 +9,7 @@ def main(argc=len(sys.argv), argv=sys.argv):
     try:
         with open(filename, 'w') as file:
             
-            add_server_to_yaml(filename)
+            add_server_to_yaml(filename, number_of_clients)
             for i in range(1, number_of_clients + 1):
                 add_client_to_yaml(filename, i)
             add_volume_to_yaml(filename)
@@ -19,7 +19,7 @@ def main(argc=len(sys.argv), argv=sys.argv):
         print(f"An error occurred: {e}")
 
 
-def add_server_to_yaml(filename,number_of_clients):
+def add_server_to_yaml(filename, number_of_clients):
     try:
         with open(filename, 'a') as file:
             file.write("name: tp0\n")

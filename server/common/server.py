@@ -11,7 +11,7 @@ betMessageType = 1
 notificationMessageType = 2
 requestWinnerMessageType = 3
 
-NUMBER_OF_CLIENTS = os.getenv("NUMBER_OF_CLIENTS", 1)
+NUMBER_OF_CLIENTS: int = int(os.getenv("NUMBER_OF_CLIENTS", 1))
 
 STORAGE_FILEPATH = "./bets.csv"
 ACK_ANSWER = 1
