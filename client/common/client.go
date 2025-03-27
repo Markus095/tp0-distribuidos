@@ -124,7 +124,6 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
         return
     }
     log.Infof("action: notify_server | result: success | client_id: %v", c.config.ID)
-	time.Sleep(100 * time.Millisecond)
 
     // Request winners in a loop with reconnection
     winnersMessage := EncodeWinnersRequest(uint32(agencyID))
@@ -153,7 +152,6 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
             // Empty winners message, disconnect, sleep, and retry
             log.Infof("action: consulta_ganadores | result: success | retrying: %d", retries+1)
             retries++
-			time.Sleep(100 * time.Millisecond)
             c.net.CloseConnection()
             time.Sleep(backoff)
             backoff *= 2
