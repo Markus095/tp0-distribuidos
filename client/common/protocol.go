@@ -72,37 +72,3 @@ func EncodeWinnersRequest(agencyNumber uint32) []byte {
     return message
 }
 
-const (
-	AnswerHeaderSize     = 4
-	AnswerTypeSize       = 2
-	AmountOfWinnersSize  = 2
-	ACKAnswer            = 1
-	NoWinnersAnswer      = 2
-	WinnersAnswer 	     = 3
-
-)
-
-func DecodeAnswerType(answer []byte) (uint16, []byte, error) {
-    if len(answer) < AnswerHeaderSize {
-		log.Errorf("action: decode_answer_type | result: fail | error: invalid message size, message size: %d, message: %d", len(answer),)
-
-        return 0, nil, fmt.Errorf("invalid message size: expected at least %d bytes, got %d", AnswerHeaderSize, len(answer))
-		
-    }
-
-    // Extract the answer type (2 bytes)
-    answerType := binary.BigEndian.Uint16(answer[0:2])
-
-    // Extract the payload length (2 bytes)
-    payloadLength := binary.BigEndian.Uint16(answer[2:4])
-
-    // Check if the payload length is valid
-    if len(answer) < int(AnswerHeaderSize+payloadLength) {
-        return 0, nil, fmt.Errorf("invalid payload size: expected %d bytes, got %d", payloadLength, len(answer)-AnswerHeaderSize)
-    }
-
-    // Extract the payload (if any)
-    payload := answer[AnswerHeaderSize : AnswerHeaderSize+payloadLength]
-
-    return answerType, payload, nil
-}

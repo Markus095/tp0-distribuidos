@@ -12,8 +12,8 @@ requestWinnerMessageType = 3
 
 STORAGE_FILEPATH = "./bets.csv"
 ACK_ANSWER = 1
-WINNERS_ANSWER = 2
-NO_WINNERS_ANSWER = 3
+NO_WINNERS_ANSWER = 2
+WINNERS_ANSWER = 3
 ANSWER_HEADER_SIZE = 4 
 
 class Server:
@@ -128,8 +128,6 @@ class Server:
             logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id} agencias_notificadas: {len(self._notified_agencies)}")
             if len(self._notified_agencies) == 5:
                 self.realizar_sorteo()
-                self._send_winners(client_sock, self.winners[agency_id])
-                return True
             self._send_ack(client_sock)
             return True
         except Exception as e:
@@ -149,8 +147,6 @@ class Server:
                 self.winners[agency_id] = [
                     int(document) for agency, document in winners if agency == agency_id and document.isdigit()
                 ]
-                if not self.winners[agency_id]:
-                    logging.info(f"action: asignar_ganadores | result: no_winners_for_agency | agencia: {agency_id}")
             logging.info("action: sorteo_realizado | result: success")
             return True
         except Exception as e:

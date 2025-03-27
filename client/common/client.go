@@ -149,7 +149,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
             return
         }
 
-        if !received || (winners == nil && retries < 5) {
+        if !received || winners == nil {
             // Empty winners message, disconnect, sleep, and retry
             log.Infof("action: consulta_ganadores | result: fail | retrying: %d", retries+1)
             retries++
