@@ -169,9 +169,7 @@ class Server:
             logging.error(f"action: solicitud_ganadores | result: fail | error: {e}")
             return False
         finally:
-            # Close the connection after responding
             client_sock.close()
-            logging.info(f"action: solicitud_ganadores | result: connection_closed | agencia: {agency_id}")
         
 
     def __handle_client_connection(self, client_sock):
