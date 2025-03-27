@@ -7,7 +7,7 @@ Se creó un script muy sencillo de Bash, que solo se encarga de imprimir los par
 5-Agregar la red a la cual están todos conectados.
 6-Si pudo agregar todo y guardar el archivo con éxito, notifica al usuario y el programa termina.
 
-### Dificultades Encontradas
+## Dificultades Encontradas
 -Hubo ciertas complicaciones a la hora de parsear el archivo, a veces las líneas quedaban desfasadas.
 
 
@@ -15,7 +15,7 @@ Se creó un script muy sencillo de Bash, que solo se encarga de imprimir los par
 Se modificó el archivo de compose (y por lo tanto el generador) para que el servidor y el/los cliente/s tengan un volumen por el cual se pueda acceder a sus respectivas configuraciones.
 Además ya no se especifica su logging level desde el compose.
 
-### Dificultades Encontradas
+## Dificultades Encontradas
 -Hubo cierta dificultad en encontrar el path correcto de los archivos de configuración a los volúmenes. Al principio intentaba con paths absolutos y no terminaba de entender por qué fallaba. Al usar paths relativos se solucionó.
 
 
@@ -27,7 +27,7 @@ El script funciona de la siguiente manera:
 4- Elimina el container.
 5- Compara la respuesta con el texto enviado. Si son iguales, imprime por consola que la prueba fue un éxito. Caso contrario, imprime que fue un fracaso.
 
-### Dificultades encontradas
+## Dificultades encontradas
 -Al principio intenté hacer la prueba a través de los clientes, pero terminé decidiendo que crear un container nuevo era más sencillo y práctico.
 -Fue difícil comprender la lógica de conectarme a la red y obtener la ip del servidor. Tuve que leer documentación de docker network.
 -Tardé un poco en entender que tenía que conectarme a través del puerto especificado en la configuración del servidor.
@@ -37,7 +37,7 @@ El script funciona de la siguiente manera:
 Se le agregó al servidor un nuevo parámetro: running, el cual es revisado en lugar del while true original. Se inicializa con un valor positivo, pero cambia cuando recibe el sigterm. Cuando eso sucede, se corta el loop y trata de cerrar todos los sockets y luego finaliza. 
 Por otro lado, se le agregó un waitgroup al cliente para revisar que las conexiones se cierran antes de terminar el programa y un campo "done" que se usa para avisarle a todas las rutinas cuando se solicita el cierre del cliente. También se le añadió un signal handler que funciona en una rutina separada para manejar la secuencia de cerrado y la secuencia de cierre, que cierra todas las conexiones.
 
-### Dificultades encontradas
+## Dificultades encontradas
 Al principio me costó encontrar el formato apropiado para el logging, así que tuve varios commits innecesarios para probar como funcionaban distintos formatos con los tests.
 Durante bastante tiempo le pasaba una cantidad erronea de parametros al handler del SIGTERM del servidor, así que el cierre no funcionaba correctamente.
 
@@ -69,37 +69,46 @@ El protocolo ya estaba planteado con la idea de manejar varias apuestas en un so
 Se modificó al cliente para poder levantar los archivos del csv en el docker volume y enviar las apuestas en varios mensajes al servidor. Cada mensaje puede tener hasta "batch: maxAmount" apuestas, pero (generalmente el último) pueden tener menos y eso no genera ningún problema. También se lo separó en varios archivos para facilitar la lectura y poder mantener la separación de responsabilidades.
 El servidor se modificó para esperar varios mensajes de un mismo cliente y para poder procesar y guardar las varias apuestas
 
-### Dificultades
+## Dificultades
 -Inicialmente moví los directorios a una carpeta "/datasets" y funcionaba bien, pero como las pruebas no lo encontraban tuve que modificar toda la lógica de la creacion de los volumenes y en lugar de pasarle un archivo ahora los clientes reciben el directorio.
 
-### Ejercicio N°7:
+### Ejercicio N°7 Explicación de Solución:
+El protocolo recibió varias modificaciones:
+Se agregó un campo "Message Type" al Header de 2 bytes, que facilita distinguir de que mensaje se trata para el servidor.
+Ahora el cliente tiene tres tipos de mensaje:
+-BetsMessage, usado para enviarle apuestas al servidor
+-NotificationMessage, usado para avisarle al servidor que ya terminó de enviar apuestas
+-WinnersRequestMessage, usado para preguntarle al servidor si alguna de las apuestas que envió ganó.
+Los dos Mensajes nuevos no tienen payload y su cantidad de apuestas siempre es cero, pero igualmente se completa este único para que el servidor siempre maneje Headers de 8 bytes.
 
-Modificar los clientes para que notifiquen al servidor al finalizar con el envío de todas las apuestas y así proceder con el sorteo.
-Inmediatamente después de la notificacion, los clientes consultarán la lista de ganadores del sorteo correspondientes a su agencia.
-Una vez el cliente obtenga los resultados, deberá imprimir por log: `action: consulta_ganadores | result: success | cant_ganadores: ${CANT}`.
+Además, como el servidor ya no contesta solo con ACKs le cree un protocolo a sus respuestas:
+## Header
+El tamaño de este es de solo 4 bytes, contiene:
+-TipoDeRespuesta (2 bytes), entero de 16 bits que indica si es un mensaje de ACK, un mensaje que avisa que aún no se determinaron los ganadores o un mensaje que contesta cuales son los ganadores de ese cliente.
+-AmountOfWinners (2 bytes), entero de 16 bits que indica cuantos ganadores puede esperar que le lleguen al cliente.
 
-El servidor deberá esperar la notificación de las 5 agencias para considerar que se realizó el sorteo e imprimir por log: `action: sorteo | result: success`.
-Luego de este evento, podrá verificar cada apuesta con las funciones `load_bets(...)` y `has_won(...)` y retornar los DNI de los ganadores de la agencia en cuestión. Antes del sorteo no se podrán responder consultas por la lista de ganadores con información parcial.
+## Body
+Contiene un único campo, y solo existe si es un mensaje con los ganadores de alguna agencia. Tiene un único campo:
+-Winners (8 bytes c/u), contiene los DNIs de los ganadores de esa agencia.
 
-Las funciones `load_bets(...)` y `has_won(...)` son provistas por la cátedra y no podrán ser modificadas por el alumno.
+Por lo tanto el tamaño de una respuesta del servidor es 4 para los primeros dos casos (solo tienen Header)
+y 4 + 8 * AmountOfWinners en el último.
 
-No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que se informen los DNIs ganadores que correspondan a cada una de ellas.
+Tanto el cliente como el servidor tuvieron cambios drásticos.
+Ahora el cliente después de haber enviado todas sus apuestas envía la notificación al servidor e inmediatamente pregunta si ya están sus ganadores. En caso de respuesta negativa cierra la conexión, realiza un sleep y vuelve a conectarse para preguntar. El sleep aumenta exponencialmente con cada respuesta negativa. Si tras 5 intentos el servidor no le contestó termina la ejecución. Tras enviar los mensajes con apuestas y la notificación de haber terminado espera un ACK del servidor para continuar. Cuando envía un mensaje de solicitar ganadores espera que el servidor le conteste con los ganadores o con un aviso de que todavía no se hizo el sorteo. Al recibir una respuesta afirmativa a la cantidad de ganadores, loguea cuantas de sus apuestas ganaron y termina.
 
-## Parte 3: Repaso de Concurrencia
+Por otro lado, el servidor ahora tiene una lógica para encodear y enviar mensajes al cliente con el que se comunica. Maneja a varios clientes de forma secuencial. Sigue manejando las apuestas enviadas como antes, pero ahora va almacenando cuantas agencias le notificaron que terminaron. Una vez que la cantidad de agencias es igual al número de clientes indicado en su variable de entorno sacada del compose, el servidor realiza el sorteo.
+Para hacer el sorteo carga las apuestas que fueron guardadas a disco y posteriormente llama al has won en cada una, almacenando el DNI de los ganadores y a qué agencia pertenecen en un diccionario. Antes de realizar el sorteo contesta cualquier consulta de ganadores con un mensaje de NO_WINNERS, y tras hacerlo con los ganadores correspondientes al ID de agencia puesto en la solicitud.
+
+
+## Dificultades
+-Inicialmente no había un protocolo para diferenciar el tipo de mensaje, se hacía en base al tamaño del payload. Esto resultó muy complicado de verificar con éxito e innecesariamente complicado, así que terminé decidiendo agregar un campo extra. 
+
+### Parte 3: Repaso de Concurrencia
 En este ejercicio es importante considerar los mecanismos de sincronización a utilizar para el correcto funcionamiento de la persistencia.
 
 ### Ejercicio N°8:
 
 Modificar el servidor para que permita aceptar conexiones y procesar mensajes en paralelo. En caso de que el alumno implemente el servidor en Python utilizando _multithreading_,  deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
 
-## Condiciones de Entrega
-Se espera que los alumnos realicen un _fork_ del presente repositorio para el desarrollo de los ejercicios y que aprovechen el esqueleto provisto tanto (o tan poco) como consideren necesario.
 
-Cada ejercicio deberá resolverse en una rama independiente con nombres siguiendo el formato `ej${Nro de ejercicio}`. Se permite agregar commits en cualquier órden, así como crear una rama a partir de otra, pero al momento de la entrega deberán existir 8 ramas llamadas: ej1, ej2, ..., ej7, ej8.
- (hint: verificar listado de ramas y últimos commits con `git ls-remote`)
-
-Se espera que se redacte una sección del README en donde se indique cómo ejecutar cada ejercicio y se detallen los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado (Parte 2) y los mecanismos de sincronización utilizados (Parte 3).
-
-Se proveen [pruebas automáticas](https://github.com/7574-sistemas-distribuidos/tp0-tests) de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas, o en su defecto que las discrepancias sean justificadas y discutidas con los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Respetar las entradas de log planteadas en los ejercicios, pues son las que se chequean en cada uno de los tests.
-
-La corrección personal tendrá en cuenta la calidad del código entregado y casos de error posibles, se manifiesten o no durante la ejecución del trabajo práctico. Se pide a los alumnos leer atentamente y **tener en cuenta** los criterios de corrección informados  [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
