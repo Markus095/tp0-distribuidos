@@ -71,15 +71,15 @@ func processLine(line string) (Bet, error) {
 	}, nil
 }
 
-func DecodeWinners(winnerBytes []byte) ([]uint16, error) {
-    if len(winnerBytes)%2 != 0 {
-		log.Infof("action: decode_winners | result: success | info: no winners in payload")
-        return []uint16{}, nil
+func DecodeWinners(winnerBytes []byte) ([]uint32, error) {
+    if len(winnerBytes)%4 != 0 {
+        log.Infof("action: decode_winners | result: success | info: no winners in payload")
+        return []uint32{}, nil
     }
 
-    var winners []uint16
-    for i := 0; i < len(winnerBytes); i += 2 {
-        winner := binary.BigEndian.Uint16(winnerBytes[i : i+2])
+    var winners []uint32
+    for i := 0; i < len(winnerBytes); i += 4 {
+        winner := binary.BigEndian.Uint32(winnerBytes[i : i+4])
         winners = append(winners, winner)
     }
 

@@ -132,7 +132,7 @@ class Server:
                 return False
             for agency_id in self._notified_agencies:
                 self.winners[agency_id] = [
-                    winner for winner in winners if getattr(winner, 'agency', None) == agency_id
+                    int(document) for agency, document in winners if agency == agency_id and document.isdigit()
                 ]
                 if not self.winners[agency_id]:
                     logging.info(f"action: asignar_ganadores | result: no_winners_for_agency | agencia: {agency_id}")
@@ -144,7 +144,7 @@ class Server:
         
     def _send_winners(self, client_sock, winners_list):
         try:
-            payload = b"".join(winner.to_bytes(2, byteorder='big') for winner in winners_list)
+            payload = b"".join(winner.to_bytes(4, byteorder='big') for winner in winners_list)
             response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + len(payload).to_bytes(2, byteorder='big') + payload
             client_sock.sendall(response)
         except Exception as e:
@@ -157,18 +157,12 @@ class Server:
         try:
             if agency_id in self.winners:
                 winners_list = self.winners[agency_id]
-                payload = b"".join(winner.to_bytes(2, byteorder='big') for winner in winners_list)
-                response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + len(payload).to_bytes(2, byteorder='big') + payload
-                logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id} | cantidad: {len(self.winners[agency_id])}")
+                self._send_winners(client_sock, winners_list)
+                logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id} | cantidad: {len(winners_list)}")
             else:
                 # Send an empty winners response
-                response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + (0).to_bytes(2, byteorder='big')
+                self._send_winners(client_sock, [])
                 logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id} no hay ganadores aun")
-            
-            # Log the response length and content
-            logging.debug(f"action: send_response | response_length: {len(response)} | response: {response}")
-            client_sock.sendall(response)
-            logging.info(f"action: send_winners | result: success | agencia: {agency_id}")
             return True
         except Exception as e:
             logging.error(f"action: solicitud_ganadores | result: fail | error: {e}")
