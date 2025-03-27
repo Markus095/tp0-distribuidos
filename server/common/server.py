@@ -27,16 +27,17 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self._running = True
 
-        # Use a Manager to create shared state
         manager = Manager()
-        self._notified_agencies = manager.list()  # Shared list for notified agencies
-        self.winners = manager.dict()  # Shared dictionary for winners
+        self._notified_agencies = manager.list()
+        self.winners = manager.dict()
 
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
+        self._processes = [] 
 
     def __handle_sigterm(self, signum, frame):
         logging.info("action: handle_signal | result: success")
         self._running = False
+        self.shutdown()
 
     def shutdown(self):
         logging.info("action: shutdown_server | result: in_progress")
@@ -46,6 +47,11 @@ class Server:
                 logging.info("action: close_server_socket | result: success")
             except Exception as e:
                 logging.error(f"action: close_server_socket | result: fail | error: {e}")
+        for process in self._processes:
+            if process.is_alive():
+                process.terminate()
+                process.join()
+        logging.info("action: terminate_processes | result: success")
         logging.info("action: shutdown_server | result: success")
 
     def _send_ack(self, client_sock):
@@ -195,7 +201,7 @@ class Server:
             while self._running:
                 try:
                     result = self._handle_incoming_messages(client_sock)
-                    if result is None:  # No valid message received, break the loop
+                    if result is None:
                         logging.info("action: handle_client | result: success | info: closing_connection")
                         break
                 except ConnectionResetError:
@@ -226,13 +232,17 @@ class Server:
                     self._server_socket.settimeout(10.0)
                     client_sock = self.__accept_new_connection()
                     if client_sock:
-                        # Spawn a new process for each client connection
                         process = Process(target=self.__handle_client_connection, args=(client_sock,))
                         process.start()
+                        self._processes.append(process)  # Track the process
                         logging.info(f"action: spawn_process | result: success | pid: {process.pid}")
                 except Exception as e:
                     if self._running:
                         logging.error(f"action: server_loop | result: error | error: {e}")
+                for process in self._processes:
+                    if not process.is_alive():
+                        process.join()  # Reap the process
+                        self._processes.remove(process)
         except Exception as e:
             logging.error(f"action: server_loop | result: error | error: {e}")
         finally:
