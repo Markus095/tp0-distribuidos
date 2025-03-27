@@ -1,7 +1,10 @@
 from common.utils import Bet, has_won, load_bets, store_bets
 
+import logging
+
 def process_bets(agency_id, num_bets, bets_data):
     decoded_bets = decode_bets(agency_id, num_bets, bets_data)
+    logging.info(f"Decoded {len(decoded_bets)} bets, about to store them")
     store_bets(decoded_bets)
     return True
 
@@ -38,9 +41,10 @@ def decode_bets(agency_id, num_bets, message: bytes) -> list[Bet]:
         bet = Bet(str(agency_id), first_name, last_name, document, birthdate, str(number))
         bets.append(bet)
 
-        return bets
+    return bets
 
 def obtain_winners_documents():
-    bets = load_bets()
+    bets = list(load_bets())
+    logging.info(f"Loaded {len(bets)} bets")
     winners = [bet.document for bet in bets if has_won(bet)]
     return winners

@@ -109,10 +109,12 @@ class Server:
         Notifies the agency that the bets have been processed.
         """
         try:
-            logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id}")
             self._notified_agencies.add(agency_id)
+            logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id} agencias_notificadas: {len(self._notified_agencies)}")
             if len(self._notified_agencies) == 5:
                 self.realizar_sorteo()
+                self._send_winners(client_sock, self.winners[agency_id])
+                return True
             self._send_ack(client_sock)
             return True
         except Exception as e:
@@ -125,10 +127,15 @@ class Server:
         """
         try:
             winners = obtain_winners_documents()
+            if not winners:
+                logging.warning("action: obtener_ganadores | result: no_winners_found")
+                return False
             for agency_id in self._notified_agencies:
                 self.winners[agency_id] = [
-                    winner for winner in winners if winner.agency == agency_id
+                    winner for winner in winners if getattr(winner, 'agency', None) == agency_id
                 ]
+                if not self.winners[agency_id]:
+                    logging.info(f"action: asignar_ganadores | result: no_winners_for_agency | agencia: {agency_id}")
             logging.info("action: sorteo_realizado | result: success")
             return True
         except Exception as e:
