@@ -150,7 +150,7 @@ func (c *Client) sendAndReceiveMessage(msgID int) {
 
         if !received || winners == nil {
             // Empty winners message, disconnect, sleep, and retry
-            log.Infof("action: consulta_ganadores | result: success | retrying: %d", retries+1)
+            log.Infof("action: intento_consulta_ganadores | result: success | retrying: %d", retries+1)
             retries++
             c.net.CloseConnection()
             time.Sleep(backoff)
