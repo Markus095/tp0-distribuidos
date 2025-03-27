@@ -32,6 +32,7 @@ class Server:
         self._lock = Lock()  
 
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
+        signal.signal(signal.SIGINT, self.__handle_sigterm)
         self._processes = [] 
 
     def __handle_sigterm(self, signum, frame):
