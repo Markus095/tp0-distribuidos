@@ -82,7 +82,10 @@ const (
 
 func DecodeAnswerType(answer []byte) (uint16, []byte, error) {
     if len(answer) < AnswerHeaderSize {
+		log.Errorf("action: decode_answer_type | result: fail | error: invalid message size, message size: %d, message: %d", len(answer),)
+
         return 0, nil, fmt.Errorf("invalid message size: expected at least %d bytes, got %d", AnswerHeaderSize, len(answer))
+		
     }
 
     // Extract the answer type (2 bytes)

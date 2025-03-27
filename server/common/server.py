@@ -124,12 +124,11 @@ class Server:
         Selects the winners and sends the notifications.
         """
         try:
-
             winners = obtain_winners_documents()
             for agency_id in self._notified_agencies:
-                for winner in winners:
-                    if winner.agency == agency_id:
-                        self.winners[agency_id] = winner
+                self.winners[agency_id] = [
+                    winner for winner in winners if winner.agency == agency_id
+                ]
             logging.info("action: sorteo_realizado | result: success")
             return True
         except Exception as e:
@@ -149,14 +148,20 @@ class Server:
         Sends the winners to the agency.
         """
         try:
-            logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id}")
             if agency_id in self.winners:
-                winners_list = "\n".join(self.winners[agency_id]).encode('utf-8')
-                self._send_winners(client_sock, winners_list)
+                winners_list = self.winners[agency_id]
+                payload = b"".join(winner.to_bytes(2, byteorder='big') for winner in winners_list)
+                response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + len(payload).to_bytes(2, byteorder='big') + payload
+                logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id} | cantidad: {len(self.winners[agency_id])}")
             else:
+                # Send an empty winners response
                 response = WINNERS_ANSWER.to_bytes(2, byteorder='big') + (0).to_bytes(2, byteorder='big')
-                client_sock.sendall(response)
-                
+                logging.info(f"action: solicitud_ganadores | result: success | agencia: {agency_id} no hay ganadores aun")
+            
+            # Log the response length and content
+            logging.debug(f"action: send_response | response_length: {len(response)} | response: {response}")
+            client_sock.sendall(response)
+            logging.info(f"action: send_winners | result: success | agencia: {agency_id}")
             return True
         except Exception as e:
             logging.error(f"action: solicitud_ganadores | result: fail | error: {e}")

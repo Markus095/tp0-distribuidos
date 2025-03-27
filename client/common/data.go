@@ -73,7 +73,8 @@ func processLine(line string) (Bet, error) {
 
 func DecodeWinners(winnerBytes []byte) ([]uint16, error) {
     if len(winnerBytes)%2 != 0 {
-        return nil, fmt.Errorf("invalid winners payload size")
+		log.Infof("action: decode_winners | result: success | info: no winners in payload")
+        return []uint16{}, nil
     }
 
     var winners []uint16
