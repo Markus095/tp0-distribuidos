@@ -5,9 +5,8 @@ import os
 from multiprocessing import Process, Manager, Lock
 from common.bet_processing import process_bets, obtain_winners_documents
 
-# Fix header and bet sizes
-MESSAGE_HEADER_SIZE = 8  # 4 bytes agencyNumber + 2 bytes HeaderType + 2 bytes num_bets
-BET_SIZE = 146  # 64 + 64 + 8 + 8 + 2 (matches client)
+MESSAGE_HEADER_SIZE = 8
+BET_SIZE = 146
 BET_MESSAGE_TYPE = 1
 NOTIFICATION_MESSAGE_TYPE = 2
 REQUEST_WINNERS_MESSAGE_TYPE = 3
@@ -33,6 +32,7 @@ class Server:
         self._lock = Lock()  
 
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
+        signal.signal(signal.SIGINT, self.__handle_sigterm)
         self._processes = [] 
 
     def __handle_sigterm(self, signum, frame):
@@ -143,7 +143,6 @@ class Server:
                 self._notified_agencies.append(agency_id)  # Add to shared list
                 logging.info(f"action: notificacion_recibida | result: success | agencia: {agency_id} agencias_notificadas: {len(self._notified_agencies)}")
             
-            # Check if all clients have notified
             if len(self._notified_agencies) == NUMBER_OF_CLIENTS:
                 self.realizar_sorteo()
 
@@ -163,7 +162,6 @@ class Server:
                 logging.warning("action: obtener_ganadores | result: no_winners_found")
                 return False
 
-            # Populate the shared winners dictionary
             for agency_id in self._notified_agencies:
                 self.winners[agency_id] = [
                     int(document) for agency, document in winners if agency == agency_id and document.isdigit()

@@ -37,7 +37,7 @@ func NewClient(config ClientConfig) *Client {
 
 func (c *Client) setupSignalHandler() {
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM)
+	signal.Notify(sigChan, syscall.SIGTERM, Syscall.SIGINT)
 
 	go func() {
 		<-sigChan
